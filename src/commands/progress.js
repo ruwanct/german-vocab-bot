@@ -88,7 +88,14 @@ ${this.getProgressMotivation(accuracy)}`;
     const userId = ctx.from.id;
     
     const recentSessions = db.all(`
-      SELECT * FROM quiz_sessions 
+      SELECT 
+        id,
+        total_cards as total_questions,
+        cards_known as correct_answers,
+        'flashcards' as session_type,
+        started_at,
+        completed_at
+      FROM flashcard_sessions 
       WHERE user_id = ? AND completed_at IS NOT NULL 
       ORDER BY completed_at DESC 
       LIMIT 10
@@ -126,13 +133,12 @@ ${this.getProgressMotivation(accuracy)}`;
     
     const bestScores = db.all(`
       SELECT 
-        session_type,
-        MAX(correct_answers) as best_correct,
-        MAX(total_questions) as total_questions,
-        MAX(ROUND((correct_answers * 100.0) / total_questions)) as best_accuracy
-      FROM quiz_sessions 
+        'flashcards' as session_type,
+        MAX(cards_known) as best_correct,
+        MAX(total_cards) as total_questions,
+        MAX(ROUND((cards_known * 100.0) / NULLIF(total_cards, 0))) as best_accuracy
+      FROM flashcard_sessions 
       WHERE user_id = ? AND completed_at IS NOT NULL 
-      GROUP BY session_type
       ORDER BY best_accuracy DESC
     `, [ctx.dbUser.id]);
 
@@ -167,12 +173,11 @@ ${this.getProgressMotivation(accuracy)}`;
     const weeklyData = db.all(`
       SELECT 
         COUNT(*) as sessions_count,
-        SUM(total_questions) as total_questions,
-        SUM(correct_answers) as correct_answers,
-        session_type
-      FROM quiz_sessions 
+        SUM(total_cards) as total_questions,
+        SUM(cards_known) as correct_answers,
+        'flashcards' as session_type
+      FROM flashcard_sessions 
       WHERE user_id = ? AND completed_at > ? 
-      GROUP BY session_type
     `, [ctx.dbUser.id, weekAgo]);
 
     if (weeklyData.length === 0) {
