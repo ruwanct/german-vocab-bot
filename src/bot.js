@@ -203,8 +203,9 @@ Use /words to explore vocabulary, /level to choose your level, then /quiz to get
 
 *Main Commands:*
 /start - Start the bot
-/quiz - Start a quiz
-/flashcard - Start AI-powered flashcard session
+/quiz - Start a quiz (includes AI flashcards)
+/level - Choose your learning level (A1/A2/B1)
+/words - Browse available vocabulary
 /progress - View your progress
 /settings - Bot settings
 
