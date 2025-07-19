@@ -1,5 +1,4 @@
 const Database = require('../database/models');
-const dictionaryAPIs = require('../api/dictionaries');
 
 class VocabularyCache {
   constructor() {
@@ -60,17 +59,8 @@ class VocabularyCache {
       return dbCached;
     }
 
-    // Fetch from APIs
-    console.log(`Fetching from APIs for: ${word}`);
-    const results = await dictionaryAPIs.searchWithFallback(word, sourceLanguage, targetLanguage);
-    
-    if (results.length > 0) {
-      // Cache the results
-      await this.saveToDbCache(word, languagePair, results);
-      this.addToMemoryCache(cacheKey, results);
-      return results;
-    }
-
+    // Dictionary APIs have been removed - return empty results
+    console.log(`No external dictionary APIs configured for: ${word}`);
     return [];
   }
 
@@ -196,31 +186,9 @@ class VocabularyCache {
       }
     }
 
-    // Second pass: fetch uncached words from APIs
+    // Dictionary APIs have been removed - uncached words return no results
     if (uncachedWords.length > 0) {
-      const { results: apiResults, errors } = await dictionaryAPIs.batchSearch(
-        uncachedWords, 
-        sourceLanguage, 
-        targetLanguage
-      );
-
-      // Group results by word and cache them
-      const wordMap = new Map();
-      apiResults.forEach(result => {
-        const key = result.word.toLowerCase();
-        if (!wordMap.has(key)) {
-          wordMap.set(key, []);
-        }
-        wordMap.get(key).push(result);
-      });
-
-      // Cache the results
-      for (const [word, wordResults] of wordMap) {
-        const languagePair = `${sourceLanguage}-${targetLanguage}`;
-        await this.saveToDbCache(word, languagePair, wordResults);
-      }
-
-      results.push(...apiResults);
+      console.log(`Dictionary APIs removed: ${uncachedWords.length} words not found in cache`);
     }
 
     return results;
@@ -277,8 +245,7 @@ class VocabularyCache {
           resolve({
             ...row,
             memory_cache_size: this.memoryCache.size,
-            memory_cache_max: this.maxMemoryCache,
-            quota_status: dictionaryAPIs.getQuotaStatus()
+            memory_cache_max: this.maxMemoryCache
           });
         }
       });

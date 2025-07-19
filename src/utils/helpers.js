@@ -133,19 +133,19 @@ class Utils {
   generateMotivationalMessage(accuracy, streak = 0) {
     const messages = {
       high: [
-        'Fantastisch! Du bist ein wahrer Vokabel-Meister! 🌟',
-        'Unglaublich! Deine Deutschkenntnisse sind beeindruckend! 🎉',
-        'Perfekt! Du beherrschst die Artikel wie ein Profi! 👑'
+        'Fantastic! You are a true vocabulary master! 🌟',
+        'Incredible! Your German skills are impressive! 🎉',
+        'Perfect! You master the articles like a pro! 👑'
       ],
       medium: [
-        'Sehr gut! Du machst großartige Fortschritte! 👍',
-        'Toll! Du bist auf dem richtigen Weg! 🎯',
-        'Weiter so! Deine Bemühungen zahlen sich aus! 💪'
+        'Very good! You are making great progress! 👍',
+        'Great! You are on the right track! 🎯',
+        'Keep it up! Your efforts are paying off! 💪'
       ],
       low: [
-        'Gut gemacht! Übung macht den Meister! 🚀',
-        'Weiter üben! Jeder Schritt bringt dich weiter! 🌱',
-        'Kopf hoch! Du wirst immer besser! 💫'
+        'Well done! Practice makes perfect! 🚀',
+        'Keep practicing! Every step takes you further! 🌱',
+        'Keep your head up! You are getting better! 💫'
       ]
     };
 
@@ -156,7 +156,7 @@ class Utils {
     const baseMessage = this.getRandomElement(messages[category]);
     
     if (streak >= 7) {
-      return `${baseMessage} Und dein ${streak}-Tage-Streak ist beeindruckend! ${this.generateStreakEmoji(streak)}`;
+      return `${baseMessage} And your ${streak}-day streak is impressive! ${this.generateStreakEmoji(streak)}`;
     }
     
     return baseMessage;
@@ -166,22 +166,22 @@ class Utils {
     const insights = [];
     
     if (weeklyData.totalSessions > 10) {
-      insights.push('🔥 Du warst diese Woche sehr aktiv!');
+      insights.push('🔥 You were very active this week!');
     }
     
     if (weeklyData.averageAccuracy > 80) {
-      insights.push('🎯 Deine Genauigkeit ist ausgezeichnet!');
+      insights.push('🎯 Your accuracy is excellent!');
     }
     
     if (weeklyData.improvementRate > 10) {
-      insights.push('📈 Du machst tolle Fortschritte!');
+      insights.push('📈 You are making great progress!');
     }
     
     if (weeklyData.consistentDays >= 5) {
-      insights.push('⭐ Du bist sehr konstant im Lernen!');
+      insights.push('⭐ You are very consistent in learning!');
     }
     
-    return insights.length > 0 ? insights : ['💪 Weiter so! Jeden Tag wird es besser!'];
+    return insights.length > 0 ? insights : ['💪 Keep it up! Every day gets better!'];
   }
 
   calculateStreak(sessions) {

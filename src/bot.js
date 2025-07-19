@@ -199,25 +199,39 @@ Use /words to explore vocabulary, /level to choose your level, then /quiz to get
 
     this.bot.help((ctx) => {
       const helpMessage = `
-🔧 *Hilfe - German Vocab Bot*
+🔧 *Help - German Vocab Bot*
 
-*Hauptbefehle:*
-/start - Bot starten
-/quiz - Quiz starten
-/progress - Fortschritt anzeigen
-/settings - Einstellungen
+*Main Commands:*
+/start - Start the bot
+/quiz - Start a quiz
+/flashcard - Start AI-powered flashcard session
+/progress - View your progress
+/settings - Bot settings
+/admin - Admin panel (authorized users)
 
-*Quiz-Typen:*
-• Article Quiz (der/die/das)
-• Translation Quiz
-• Mixed Quiz
+*Quiz Types:*
+• **Article Quiz** - Learn German articles (der/die/das)
+• **Translation Quiz** - German to English translation
+• **Mixed Quiz** - Combination of both
+• **AI Flashcards** - Intelligent spaced repetition with real-time analysis
 
-*Tipps:*
-• Verwende die Inline-Buttons für bessere Interaktion
-• Dein Fortschritt wird automatisch gespeichert
-• Passe die Einstellungen an deine Bedürfnisse an
+*Features:*
+• AI-powered vocabulary analysis
+• Spaced repetition learning
+• Progress tracking and statistics
+• Customizable difficulty levels
+• Multiple AI providers (Groq, OpenAI, Anthropic, Ollama)
 
-Bei Problemen schreibe an den Support.
+*Tips:*
+• Use inline buttons for better interaction
+• Your progress is automatically saved
+• Adjust settings to match your learning goals
+• Try flashcards for adaptive learning
+
+*Support the Project:*
+☕ [Buy me a coffee](https://www.buymeacoffee.com/germanvocabbot) to support development!
+
+For issues or questions, contact support via /settings.
       `;
       
       ctx.replyWithMarkdown(helpMessage);

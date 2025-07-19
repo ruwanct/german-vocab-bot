@@ -1,6 +1,5 @@
 const Database = require('../database/models');
 const vocabularyCache = require('./vocabularyCache');
-const dictionaryAPIs = require('../api/dictionaries');
 
 class VocabularyManager {
   constructor() {
@@ -161,11 +160,11 @@ class VocabularyManager {
       score += Math.min(result.frequency / 1000, 1) * 0.3;
     }
     
-    // Source preference (PONS usually more reliable)
-    if (result.source === 'pons') {
+    // Source preference (manual entries are most reliable)
+    if (result.source === 'manual') {
+      score += 0.3;
+    } else if (result.source === 'csv') {
       score += 0.2;
-    } else if (result.source === 'linguatools') {
-      score += 0.1;
     }
     
     // Penalize if missing important fields
@@ -326,8 +325,7 @@ class VocabularyManager {
           const cacheStats = await this.cache.getCacheStats();
           resolve({
             database: row,
-            cache: cacheStats,
-            api_quota: dictionaryAPIs.getQuotaStatus()
+            cache: cacheStats
           });
         }
       });

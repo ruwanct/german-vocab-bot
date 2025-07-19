@@ -1,6 +1,5 @@
 const { Markup } = require('telegraf');
 const vocabularyManager = require('../services/vocabularyManager');
-const dictionaryAPIs = require('../api/dictionaries');
 
 class AdminHandler {
   constructor() {
@@ -18,11 +17,9 @@ class AdminHandler {
     }
 
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('📊 Statistiken', 'admin_stats')],
-      [Markup.button.callback('🔄 Vokabeln aktualisieren', 'admin_enrich')],
-      [Markup.button.callback('🗑️ Cache leeren', 'admin_clear_cache')],
-      [Markup.button.callback('🔍 API Status', 'admin_api_status')],
-      [Markup.button.callback('📈 Quota Status', 'admin_quota')]
+      [Markup.button.callback('📊 Statistics', 'admin_stats')],
+      [Markup.button.callback('🔄 Update Vocabulary', 'admin_enrich')],
+      [Markup.button.callback('🗑️ Clear Cache', 'admin_clear_cache')]
     ]);
 
     const message = `
@@ -31,10 +28,8 @@ class AdminHandler {
 Management options for the German Vocab Bot:
 
 📊 *Statistics*: Show database and cache statistics
-🔄 *Update Vocabulary*: Load new vocabulary from APIs
+🔄 *Update Vocabulary*: Load new vocabulary from CSV files
 🗑️ *Clear Cache*: Reset temporary storage
-🔍 *API Status*: Check connection to PONS and Linguatools
-📈 *Quota Status*: Show current API usage
     `;
 
     await ctx.replyWithMarkdown(message, keyboard);
@@ -58,12 +53,6 @@ Management options for the German Vocab Bot:
       case 'admin_clear_cache':
         await this.clearCache(ctx, db);
         break;
-      case 'admin_api_status':
-        await this.showApiStatus(ctx, db);
-        break;
-      case 'admin_quota':
-        await this.showQuotaStatus(ctx, db);
-        break;
       default:
         await ctx.answerCbQuery('Unknown command');
     }
@@ -80,9 +69,7 @@ Management options for the German Vocab Bot:
 🗃️ *Database:*
 • Total words: ${stats.database.total_words}
 • Manual entries: ${stats.database.manual_words}
-• API entries: ${stats.database.api_words}
-• PONS entries: ${stats.database.pons_words}
-• Linguatools entries: ${stats.database.linguatools_words}
+• API entries: ${stats.database.api_words || 0}
 • Categories: ${stats.database.categories}
 • Levels: ${stats.database.levels}
 • Average confidence: ${(stats.database.avg_confidence || 0).toFixed(2)}
@@ -93,9 +80,9 @@ Management options for the German Vocab Bot:
 • Average accesses: ${(stats.cache.avg_accesses || 0).toFixed(1)}
 • Memory Cache: ${stats.cache.memory_cache_size}/${stats.cache.memory_cache_max}
 
-🔌 *API Quota:*
-• PONS: ${stats.api_quota.pons.used}/${stats.api_quota.pons.limit}
-• Linguatools: ${stats.api_quota.linguatools.used}/${stats.api_quota.linguatools.limit}
+🤖 *AI Integration:*
+• Using AI providers for vocabulary analysis
+• No external dictionary APIs configured
       `;
 
       const keyboard = Markup.inlineKeyboard([
@@ -108,33 +95,33 @@ Management options for the German Vocab Bot:
         reply_markup: keyboard.reply_markup
       });
     } catch (error) {
-      await ctx.editMessageText(`❌ Fehler beim Laden der Statistiken: ${error.message}`);
+      await ctx.editMessageText(`❌ Error loading statistics: ${error.message}`);
     }
   }
 
   async enrichVocabulary(ctx, db) {
     try {
-      await ctx.editMessageText('🔄 Vokabeln werden aktualisiert... Bitte warten.');
+      await ctx.editMessageText('🔄 Updating vocabulary... Please wait.');
       
       await vocabularyManager.initialize();
       const result = await vocabularyManager.autoEnrichVocabulary(10);
       
       let message = `
-✅ *Vokabeln Aktualisierung abgeschlossen*
+✅ *Vocabulary Aktualisierung abgeschlossen*
 
 📈 *Ergebnis:*
 • New words added: ${result.enriched}
-• Fehler: ${result.errors.length}
+• Error: ${result.errors.length}
       `;
 
       if (result.errors.length > 0) {
-        message += '\n\n❌ *Fehler:*\n';
+        message += '\n\n❌ *Error:*\n';
         result.errors.slice(0, 5).forEach(error => {
           message += `• ${error.word}: ${error.error}\n`;
         });
         
         if (result.errors.length > 5) {
-          message += `• ... und ${result.errors.length - 5} weitere Fehler`;
+          message += `• ... und ${result.errors.length - 5} weitere Error`;
         }
       }
 
@@ -148,7 +135,7 @@ Management options for the German Vocab Bot:
         reply_markup: keyboard.reply_markup
       });
     } catch (error) {
-      await ctx.editMessageText(`❌ Fehler bei der Aktualisierung: ${error.message}`);
+      await ctx.editMessageText(`❌ Error bei der Aktualisierung: ${error.message}`);
     }
   }
 
@@ -169,7 +156,7 @@ Management options for the German Vocab Bot:
       `;
 
       const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('📊 Statistiken', 'admin_stats')],
+        [Markup.button.callback('📊 Statistics', 'admin_stats')],
         [Markup.button.callback('🔙 Back', 'admin_back')]
       ]);
 
@@ -178,87 +165,10 @@ Management options for the German Vocab Bot:
         reply_markup: keyboard.reply_markup
       });
     } catch (error) {
-      await ctx.editMessageText(`❌ Fehler beim Leeren des Caches: ${error.message}`);
+      await ctx.editMessageText(`❌ Error beim Leeren des Caches: ${error.message}`);
     }
   }
 
-  async showApiStatus(ctx, db) {
-    try {
-      await ctx.editMessageText('🔍 API status is being checked... Please wait.');
-      
-      const status = await dictionaryAPIs.validateConnection();
-      
-      const message = `
-🔍 *API Verbindungsstatus*
-
-🌐 *PONS Dictionary API:*
-• Status: ${status.pons.connected ? '✅ Verbunden' : '❌ Nicht verbunden'}
-${status.pons.error ? `• Fehler: ${status.pons.error}` : ''}
-
-🌐 *Linguatools Dictionary API:*
-• Status: ${status.linguatools.connected ? '✅ Verbunden' : '❌ Nicht verbunden'}
-${status.linguatools.error ? `• Fehler: ${status.linguatools.error}` : ''}
-
-📊 *Empfehlung:*
-${status.pons.connected && status.linguatools.connected ? 
-  '✅ Alle APIs funktionieren optimal' : 
-  '⚠️ Check the API keys in settings'}
-      `;
-
-      const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('🔄 Check Again', 'admin_api_status')],
-        [Markup.button.callback('🔙 Back', 'admin_back')]
-      ]);
-
-      await ctx.editMessageText(message, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard.reply_markup
-      });
-    } catch (error) {
-      await ctx.editMessageText(`❌ Error checking API status: ${error.message}`);
-    }
-  }
-
-  async showQuotaStatus(ctx, db) {
-    try {
-      const quotaStatus = dictionaryAPIs.getQuotaStatus();
-      
-      const message = `
-📈 *API Quota Status*
-
-🔵 *PONS Dictionary API:*
-• Verwendet: ${quotaStatus.pons.used}/${quotaStatus.pons.limit}
-• Verbleibend: ${quotaStatus.pons.remaining}
-• Reset: ${quotaStatus.pons.resetDate.toLocaleDateString('de-DE')}
-• Prozentsatz: ${Math.round((quotaStatus.pons.used / quotaStatus.pons.limit) * 100)}%
-
-🟢 *Linguatools Dictionary API:*
-• Verwendet: ${quotaStatus.linguatools.used}/${quotaStatus.linguatools.limit}
-• Verbleibend: ${quotaStatus.linguatools.remaining}
-• Reset: ${quotaStatus.linguatools.resetDate.toLocaleDateString('de-DE')}
-• Prozentsatz: ${Math.round((quotaStatus.linguatools.used / quotaStatus.linguatools.limit) * 100)}%
-
-📊 *Total available requests:*
-${quotaStatus.pons.remaining + quotaStatus.linguatools.remaining} / 2000
-
-${quotaStatus.pons.remaining + quotaStatus.linguatools.remaining < 100 ? 
-  '⚠️ Warning: Quota almost exhausted!' : 
-  '✅ Quota in good condition'}
-      `;
-
-      const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('🔄 Refresh', 'admin_quota')],
-        [Markup.button.callback('🔙 Back', 'admin_back')]
-      ]);
-
-      await ctx.editMessageText(message, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard.reply_markup
-      });
-    } catch (error) {
-      await ctx.editMessageText(`❌ Fehler beim Laden der Quota: ${error.message}`);
-    }
-  }
 
   async searchSpecificWord(ctx, word) {
     if (!this.isAdmin(ctx.from.id)) {
@@ -295,7 +205,7 @@ ${quotaStatus.pons.remaining + quotaStatus.linguatools.remaining < 100 ?
 
       await ctx.replyWithMarkdown(message);
     } catch (error) {
-      await ctx.reply(`❌ Fehler bei der Suche: ${error.message}`);
+      await ctx.reply(`❌ Error bei der Suche: ${error.message}`);
     }
   }
 }

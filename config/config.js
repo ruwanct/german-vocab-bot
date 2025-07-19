@@ -9,24 +9,6 @@ module.exports = {
   database: {
     path: process.env.DATABASE_PATH || './data/bot.db'
   },
-  apis: {
-    pons: {
-      apiKey: process.env.PONS_API_KEY || null,
-      baseUrl: 'https://api.pons.com/v1',
-      quota: {
-        limit: 1000,
-        resetPeriod: 'monthly'
-      }
-    },
-    linguatools: {
-      apiKey: process.env.LINGUATOOLS_API_KEY || null,
-      baseUrl: 'https://api.linguatools.org/v1',
-      quota: {
-        limit: 1000,
-        resetPeriod: 'monthly'
-      }
-    }
-  },
   quiz: {
     questionsPerSession: 10,
     timeoutSeconds: 30,
