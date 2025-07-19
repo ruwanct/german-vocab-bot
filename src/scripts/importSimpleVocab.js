@@ -25,8 +25,8 @@ class SimpleVocabularyImporter {
   }
 
   async ensureSimpleTable() {
-    return new Promise((resolve, reject) => {
-      this.db.db.run(`
+    try {
+      this.db.run(`
         CREATE TABLE IF NOT EXISTS vocabulary_simple (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           german_word TEXT NOT NULL UNIQUE,
@@ -35,11 +35,10 @@ class SimpleVocabularyImporter {
           added_date DATETIME DEFAULT CURRENT_TIMESTAMP,
           difficulty_score REAL DEFAULT 1.0
         )
-      `, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+      `);
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -159,21 +158,20 @@ class SimpleVocabularyImporter {
   }
 
   async getExistingWord(germanWord) {
-    return new Promise((resolve, reject) => {
-      this.db.db.get(`
+    try {
+      return this.db.get(`
         SELECT * FROM vocabulary_simple 
         WHERE german_word = ?
         LIMIT 1
-      `, [germanWord], (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+      `, [germanWord]);
+    } catch (error) {
+      throw error;
+    }
   }
 
   async insertVocabularyItem(item) {
-    return new Promise((resolve, reject) => {
-      this.db.db.run(`
+    try {
+      const result = this.db.run(`
         INSERT INTO vocabulary_simple (
           german_word, english_translation, level, added_date
         ) VALUES (?, ?, ?, datetime('now'))
@@ -181,20 +179,17 @@ class SimpleVocabularyImporter {
         item.german_word,
         item.english_translation,
         item.level
-      ], function(err) {
-        if (err) {
-          console.error('Insert error:', err.message);
-          reject(err);
-        } else {
-          resolve(this.lastID);
-        }
-      });
-    });
+      ]);
+      return result.lastInsertRowid;
+    } catch (error) {
+      console.error('Insert error:', error.message);
+      throw error;
+    }
   }
 
   async updateVocabularyItem(id, item) {
-    return new Promise((resolve, reject) => {
-      this.db.db.run(`
+    try {
+      const result = this.db.run(`
         UPDATE vocabulary_simple SET
           english_translation = ?, level = ?
         WHERE id = ?
@@ -202,11 +197,11 @@ class SimpleVocabularyImporter {
         item.english_translation,
         item.level,
         id
-      ], function(err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+      ]);
+      return result.changes;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -215,71 +210,63 @@ class SimpleVocabularyImporter {
   async convertExistingVocabulary() {
     console.log('Converting existing vocabulary to simple format...');
 
-    return new Promise((resolve, reject) => {
-      this.db.db.all(`
+    try {
+      const rows = this.db.all(`
         SELECT word, article, translation_en, level
         FROM vocabulary
         WHERE word IS NOT NULL AND translation_en IS NOT NULL
-      `, async (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      `);
 
-        const converted = [];
-        const errors = [];
+      const converted = [];
+      const errors = [];
 
-        for (const row of rows) {
-          try {
-            const germanWord = this.stripArticle(row.article ? `${row.article} ${row.word}` : row.word);
-            const englishTranslation = this.cleanTranslation(row.translation_en);
+      for (const row of rows) {
+        try {
+          const germanWord = this.stripArticle(row.article ? `${row.article} ${row.word}` : row.word);
+          const englishTranslation = this.cleanTranslation(row.translation_en);
 
-            if (germanWord && englishTranslation) {
-              converted.push({
-                german_word: germanWord,
-                english_translation: englishTranslation,
-                level: row.level || 'A1'
-              });
-            }
-          } catch (error) {
-            errors.push({
-              word: row.word,
-              error: error.message
+          if (germanWord && englishTranslation) {
+            converted.push({
+              german_word: germanWord,
+              english_translation: englishTranslation,
+              level: row.level || 'A1'
             });
           }
-        }
-
-        try {
-          const dbResult = await this.importToDatabase(converted);
-          console.log(`✅ Converted ${dbResult.imported} words, updated ${dbResult.updated}`);
-          
-          resolve({
-            converted: converted.length,
-            imported: dbResult.imported,
-            updated: dbResult.updated,
-            errors: errors.length
-          });
         } catch (error) {
-          reject(error);
+          errors.push({
+            word: row.word,
+            error: error.message
+          });
         }
-      });
-    });
+      }
+
+      const dbResult = await this.importToDatabase(converted);
+      console.log(`✅ Converted ${dbResult.imported} words, updated ${dbResult.updated}`);
+      
+      return {
+        converted: converted.length,
+        imported: dbResult.imported,
+        updated: dbResult.updated,
+        errors: errors.length
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getStatistics() {
-    return new Promise((resolve, reject) => {
-      this.db.db.all(`
+    try {
+      return this.db.all(`
         SELECT 
           level,
           COUNT(*) as count
         FROM vocabulary_simple
         GROUP BY level
         ORDER BY level
-      `, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+      `);
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
