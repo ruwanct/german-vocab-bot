@@ -1,0 +1,45 @@
+{
+  "name": "german-vocab-bot",
+  "version": "1.0.0",
+  "description": "A Telegram bot for learning German vocabulary with quiz functionality and progress tracking",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "dev": "nodemon src/bot.js",
+    "init-db": "node src/database/init.js",
+    "init-flashcard-db": "node src/database/flashcard-init.js",
+    "import-vocab": "node src/scripts/importVocabulary.js",
+    "import-simple": "node src/scripts/importSimpleVocab.js",
+    "pdf-to-csv": "node src/scripts/pdfToVocab.js",
+    "check-duplicates": "node src/scripts/manageDuplicates.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "pdf-parse": "^1.1.1",
+    "sqlite3": "^5.1.6",
+    "telegraf": "^4.15.6"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "german",
+    "vocabulary",
+    "language-learning",
+    "quiz",
+    "articles"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
