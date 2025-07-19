@@ -1,8 +1,12 @@
 const { Markup } = require('telegraf');
 
 class SettingsHandler {
-  async showSettings(ctx) {
+  async showSettings(ctx, db) {
+    const settings = await db.getUserSettings(ctx.dbUser.id) || {};
+    const currentLevel = settings.preferred_level || 'A1';
+    
     const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('📚 Learning Level', 'settings_level')],
       [Markup.button.callback('📝 Quiz Settings', 'settings_quiz')],
       [Markup.button.callback('🔔 Notifications', 'settings_notifications')],
       [Markup.button.callback('🎯 Learning Goals', 'settings_goals')],
@@ -13,8 +17,11 @@ class SettingsHandler {
     const message = `
 ⚙️ *Settings*
 
+*Current Level:* ${currentLevel}
+
 Personalize your learning experience:
 
+📚 *Learning Level*: Choose A1, A2, or B1
 📝 *Quiz Settings*: Difficulty, questions per session
 🔔 *Notifications*: Reminders and schedules
 🎯 *Learning Goals*: Daily goals and progress targets
@@ -29,7 +36,9 @@ Personalize your learning experience:
     const data = ctx.callbackQuery.data;
     const userId = ctx.from.id;
     
-    if (data === 'settings_quiz') {
+    if (data === 'settings_level') {
+      await this.showLevelSettings(ctx, db);
+    } else if (data === 'settings_quiz') {
       await this.showQuizSettings(ctx, db);
     } else if (data === 'settings_notifications') {
       await this.showNotificationSettings(ctx, db);
@@ -39,9 +48,74 @@ Personalize your learning experience:
       await this.showLanguageSettings(ctx, db);
     } else if (data === 'settings_export') {
       await this.exportUserData(ctx, db);
+    } else if (data === 'settings_back') {
+      await this.showSettings(ctx, db);
     } else if (data.startsWith('settings_set_')) {
       await this.handleSettingChange(ctx, db, data);
     }
+  }
+
+  async showLevelSettings(ctx, db) {
+    const settings = await db.getUserSettings(ctx.dbUser.id) || {};
+    const currentLevel = settings.preferred_level || 'A1';
+    
+    // Get vocabulary count for each level
+    const levelStats = await this.getLevelStatistics(db);
+    
+    const message = `
+📚 *Learning Level*
+
+*Current Level:* ${currentLevel}
+
+Choose your learning level:
+
+🟢 *A1 (Beginner)*
+• Basic vocabulary and phrases
+• ${levelStats.A1 || 0} words available
+
+🟡 *A2 (Elementary)*  
+• Expanded vocabulary
+• ${levelStats.A2 || 0} words available
+
+🟠 *B1 (Intermediate)*
+• Advanced vocabulary
+• ${levelStats.B1 || 0} words available
+
+Your flashcards will show words from the selected level.
+    `;
+
+    const keyboard = Markup.inlineKeyboard([
+      [
+        Markup.button.callback(currentLevel === 'A1' ? '✅ A1' : 'A1', 'settings_set_level_A1'),
+        Markup.button.callback(currentLevel === 'A2' ? '✅ A2' : 'A2', 'settings_set_level_A2'),
+        Markup.button.callback(currentLevel === 'B1' ? '✅ B1' : 'B1', 'settings_set_level_B1')
+      ],
+      [Markup.button.callback('🔙 Back', 'settings_back')]
+    ]);
+
+    await ctx.editMessageText(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard.reply_markup
+    });
+  }
+
+  async getLevelStatistics(db) {
+    return new Promise((resolve, reject) => {
+      db.db.all(`
+        SELECT level, COUNT(*) as count
+        FROM vocabulary_simple
+        GROUP BY level
+      `, (err, rows) => {
+        if (err) reject(err);
+        else {
+          const stats = {};
+          rows.forEach(row => {
+            stats[row.level] = row.count;
+          });
+          resolve(stats);
+        }
+      });
+    });
   }
 
   async showQuizSettings(ctx, db) {
@@ -229,6 +303,9 @@ Data will be provided as a JSON file.
       const newSettings = { ...currentSettings };
       
       switch (setting) {
+        case 'level':
+          newSettings.preferred_level = value;
+          break;
         case 'questions':
           newSettings.questions_per_session = parseInt(value);
           break;
@@ -312,6 +389,8 @@ Data will be provided as a JSON file.
 
   getSettingDescription(setting, value) {
     switch (setting) {
+      case 'level':
+        return `Learning level changed to: ${value}`;
       case 'questions':
         return `Questions per quiz session: ${value}`;
       case 'difficulty':

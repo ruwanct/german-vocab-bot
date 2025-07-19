@@ -77,17 +77,19 @@ I help you learn German vocabulary with focus on articles (der/die/das).
 
 📚 *Available Commands:*
 /quiz - Start a quiz
+/level - Choose your learning level (A1/A2/B1)
 /progress - Show your progress
 /settings - Adjust settings
 /help - Show help
 
 🎯 *Features:*
-• Interactive quizzes with der/die/das
-• Progress tracking
+• Interactive flashcards with AI analysis
+• Multiple difficulty levels (A1/A2/B1)
+• Progress tracking with spaced repetition
 • Personal settings
-• A1/A2/B1 Level German vocabulary
+• Level-specific vocabulary
 
-Use /quiz to get started!
+Use /level to choose your level, then /quiz to get started!
       `;
       
       ctx.replyWithMarkdown(welcomeMessage);
@@ -120,9 +122,40 @@ Bei Problemen schreibe an den Support.
     });
 
     this.bot.command('quiz', (ctx) => this.quizHandler.startQuiz(ctx, this.db));
+    this.bot.command('level', (ctx) => this.showLevelSelector(ctx));
     this.bot.command('progress', progressHandler.showProgress.bind(progressHandler));
     this.bot.command('settings', (ctx) => this.settingsHandler.showSettings(ctx, this.db));
     this.bot.command('admin', adminHandler.handleAdminCommand.bind(adminHandler));
+  }
+
+  async showLevelSelector(ctx) {
+    const settings = await this.db.getUserSettings(ctx.dbUser.id) || {};
+    const currentLevel = settings.preferred_level || 'A1';
+    
+    const message = `
+📚 *Choose Your Learning Level*
+
+*Current Level:* ${currentLevel}
+
+Select the level you want to practice:
+
+🟢 *A1* - Beginner (Basic vocabulary)
+🟡 *A2* - Elementary (Expanded vocabulary)  
+🟠 *B1* - Intermediate (Advanced vocabulary)
+
+Your flashcards will show words from the selected level.
+    `;
+
+    const keyboard = Markup.inlineKeyboard([
+      [
+        Markup.button.callback(currentLevel === 'A1' ? '✅ A1' : 'A1', 'level_select_A1'),
+        Markup.button.callback(currentLevel === 'A2' ? '✅ A2' : 'A2', 'level_select_A2'),
+        Markup.button.callback(currentLevel === 'B1' ? '✅ B1' : 'B1', 'level_select_B1')
+      ],
+      [Markup.button.callback('🎴 Start Quiz', 'level_start_quiz')]
+    ]);
+
+    await ctx.replyWithMarkdown(message, keyboard);
   }
 
   setupCallbacks() {
@@ -134,6 +167,8 @@ Bei Problemen schreibe an den Support.
         await this.quizHandler.handleQuizCallback(ctx, this.db, this.activeQuizzes);
       } else if (data.startsWith('settings_')) {
         await this.settingsHandler.handleSettingsCallback(ctx, this.db);
+      } else if (data.startsWith('level_')) {
+        await this.handleLevelCallback(ctx);
       } else if (data.startsWith('progress_')) {
         await progressHandler.handleProgressCallback(ctx, this.db);
       } else if (data.startsWith('admin_')) {
@@ -142,6 +177,34 @@ Bei Problemen schreibe an den Support.
       
       await ctx.answerCbQuery();
     });
+  }
+
+  async handleLevelCallback(ctx) {
+    const data = ctx.callbackQuery.data;
+    
+    if (data.startsWith('level_select_')) {
+      const level = data.split('_')[2];
+      
+      // Update user's preferred level
+      const currentSettings = await this.db.getUserSettings(ctx.dbUser.id) || {};
+      const newSettings = { ...currentSettings, preferred_level: level };
+      await this.db.updateUserSettings(ctx.dbUser.id, newSettings);
+      
+      await ctx.editMessageText(
+        `✅ Level changed to ${level}!\n\nYour flashcards will now show ${level} vocabulary words.`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('🎴 Start Quiz', 'level_start_quiz')],
+            [Markup.button.callback('📚 Change Level', 'level_change_again')]
+          ]).reply_markup
+        }
+      );
+    } else if (data === 'level_start_quiz') {
+      await this.quizHandler.startQuiz(ctx, this.db);
+    } else if (data === 'level_change_again') {
+      await this.showLevelSelector(ctx);
+    }
   }
 
   setupErrorHandling() {

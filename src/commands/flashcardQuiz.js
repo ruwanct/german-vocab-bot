@@ -8,14 +8,15 @@ class FlashcardQuizHandler {
 
   async startFlashcardQuiz(ctx, db) {
     const userId = ctx.from.id;
-    const userSettings = await db.getUserSettings(userId) || {};
+    const userSettings = await db.getUserSettings(ctx.dbUser.id) || {};
     const cardsPerSession = userSettings.cards_per_session || 20;
+    const preferredLevel = userSettings.preferred_level || 'A1';
     
-    // Get vocabulary for flashcards
-    const vocabulary = await this.getFlashcardVocabulary(db, userId, cardsPerSession);
+    // Get vocabulary for flashcards from selected level
+    const vocabulary = await this.getFlashcardVocabulary(db, userId, cardsPerSession, preferredLevel);
     
     if (vocabulary.length === 0) {
-      await ctx.reply('❌ No vocabulary found. Please import some words first with /admin');
+      await ctx.reply(`❌ No ${preferredLevel} vocabulary found for review. Try changing your level in /settings or check back later.`);
       return;
     }
 
@@ -30,7 +31,7 @@ class FlashcardQuizHandler {
       cardsKnown: 0,
       cardsLearning: 0,
       startTime: Date.now(),
-      userLevel: userSettings.preferred_level || 'A1'
+      userLevel: preferredLevel
     };
 
     this.activeSessions.set(userId, session);
@@ -38,9 +39,9 @@ class FlashcardQuizHandler {
     await this.showCurrentCard(ctx, db);
   }
 
-  async getFlashcardVocabulary(db, userId, limit) {
+  async getFlashcardVocabulary(db, userId, limit, preferredLevel = 'A1') {
     return new Promise((resolve, reject) => {
-      // Get vocabulary that needs review, prioritizing difficult words
+      // Get vocabulary that needs review, prioritizing difficult words from selected level
       db.db.all(`
         SELECT v.id, v.german_word, v.english_translation, v.level,
                COALESCE(fp.mastery_level, 0) as mastery_level,
@@ -48,13 +49,13 @@ class FlashcardQuizHandler {
                COALESCE(fp.next_review, datetime('now')) as next_review
         FROM vocabulary_simple v
         LEFT JOIN flashcard_progress fp ON v.id = fp.vocabulary_id AND fp.user_id = ?
-        WHERE fp.next_review IS NULL OR fp.next_review <= datetime('now')
+        WHERE v.level = ? AND (fp.next_review IS NULL OR fp.next_review <= datetime('now'))
         ORDER BY 
           fp.mastery_level ASC,
           fp.times_shown ASC,
           RANDOM()
         LIMIT ?
-      `, [userId, limit], (err, rows) => {
+      `, [userId, preferredLevel, limit], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
@@ -75,7 +76,7 @@ class FlashcardQuizHandler {
     const totalCards = session.vocabulary.length;
 
     const message = `
-🎴 *Flashcard* ${cardNumber}/${totalCards}
+🎴 *Flashcard* ${cardNumber}/${totalCards} (${session.userLevel})
 
 🇺🇸 *English:*
 **${currentWord.english_translation}**
@@ -129,7 +130,7 @@ Think of the German word...
       const totalCards = session.vocabulary.length;
 
       let message = `
-🎴 *Flashcard* ${cardNumber}/${totalCards}
+🎴 *Flashcard* ${cardNumber}/${totalCards} (${session.userLevel})
 
 🇺🇸 *English:*
 ${currentWord.english_translation}

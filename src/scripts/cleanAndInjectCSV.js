@@ -90,6 +90,10 @@ class DatabaseCleanAndInject {
       {
         path: path.join(process.cwd(), 'vocabulary/levels/a2-words.csv'),
         level: 'A2'
+      },
+      {
+        path: path.join(process.cwd(), 'vocabulary/levels/b1-words.csv'),
+        level: 'B1'
       }
     ];
 
