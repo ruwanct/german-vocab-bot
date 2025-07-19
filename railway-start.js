@@ -44,17 +44,15 @@ async function initializeForRailway() {
     const db = new Database();
     await db.connect();
     
-    const vocabularyCount = await new Promise((resolve, reject) => {
-      db.db.get('SELECT COUNT(*) as count FROM vocabulary_simple', (err, row) => {
-        if (err) {
-          // Table might not exist, that's ok
-          console.log('📝 vocabulary_simple table not found, will be created during import');
-          resolve(0);
-        } else {
-          resolve(row.count);
-        }
-      });
-    });
+    let vocabularyCount = 0;
+    try {
+      const row = db.get('SELECT COUNT(*) as count FROM vocabulary_simple');
+      vocabularyCount = row.count;
+    } catch (err) {
+      // Table might not exist, that's ok
+      console.log('📝 vocabulary_simple table not found, will be created during import');
+      vocabularyCount = 0;
+    }
 
     await db.close();
     console.log(`📚 Vocabulary words in database: ${vocabularyCount}`);
