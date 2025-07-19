@@ -1,18 +1,17 @@
 # German Vocabulary Bot 🇩🇪
 
-A comprehensive Telegram bot for learning German vocabulary with interactive quizzes, progress tracking, and real-time dictionary API integration.
+A comprehensive Telegram bot for learning German vocabulary with AI-powered flashcards, interactive quizzes, and intelligent progress tracking.
 
 ## ✨ Features
 
-- **AI-Powered Flashcard System**: Intelligent spaced repetition with real-time word analysis
-- **Interactive Quiz System**: Article quizzes (der/die/das), translation quizzes, and mixed quizzes
-- **Multiple AI Provider Support**: Groq, OpenAI, Anthropic, and local Ollama integration
-- **Progress Tracking**: Detailed statistics, streaks, and performance analytics
-- **User Settings**: Customizable difficulty, notification preferences, and learning goals
-- **Dual Vocabulary System**: Complex vocabulary database + simplified flashcard entries
-- **Smart Database**: SQLite with better-sqlite3 for performance and reliability
-- **Admin Panel**: Monitor usage, manage vocabulary, and view statistics
-- **Data Export**: Export learning progress and statistics
+- 🎴 **AI-Powered Flashcard System**: Intelligent spaced repetition with real-time word analysis
+- 🎯 **Interactive Quiz System**: Article quizzes (der/die/das), translation quizzes, and mixed modes  
+- 🤖 **Multiple AI Provider Support**: Groq, OpenAI, Anthropic, and local Ollama integration
+- 📊 **Progress Tracking**: Detailed statistics, streaks, and performance analytics
+- ⚙️ **User Settings**: Customizable difficulty, notification preferences, and learning goals
+- 🗃️ **Smart Database**: SQLite with better-sqlite3 for performance and reliability
+- 👑 **Admin Panel**: Monitor usage, manage vocabulary, and view statistics
+- 📤 **Data Export**: Export learning progress and statistics
 
 ## 🏗️ Project Structure
 
@@ -62,14 +61,19 @@ german-vocab-bot/
 
 ### Prerequisites
 
+**✅ What You Actually Need:**
 - Node.js (v16 or higher)
-- npm or yarn
-- Telegram Bot Token (from @BotFather)
-- AI Provider API Key (choose one or more):
-  - Groq API Key (recommended for speed)
+- Telegram Bot Token (free from @BotFather)
+- AI Provider API Key (choose one):
+  - **Groq API Key** (recommended for speed and cost)
   - OpenAI API Key
   - Anthropic API Key
   - Local Ollama installation
+
+**❌ What You DON'T Need:**
+- No external dictionary APIs required
+- No PONS or Linguatools API keys
+- Works completely offline after setup
 
 ### Installation
 
@@ -112,36 +116,24 @@ german-vocab-bot/
 
 ### Configuration
 
-Edit your `.env` file with the following variables:
+Create your `.env` file (minimal setup):
 
 ```env
-# Required
+# Required - Get from @BotFather on Telegram
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-# Database Configuration
-DATABASE_PATH=./data/german_vocab.db
-
-# AI Provider API Keys (choose one or more)
-# Groq API (recommended for speed)
+# Required - Choose ONE AI provider
 GROQ_API_KEY=your_groq_api_key_here
 
-# OpenAI API
-# OPENAI_API_KEY=your_openai_api_key_here
-# OPENAI_MODEL=gpt-3.5-turbo
+# Optional - Database location
+DATABASE_PATH=./data/german_vocab.db
 
-# Anthropic API
-# ANTHROPIC_API_KEY=your_anthropic_api_key_here
-# ANTHROPIC_MODEL=claude-3-haiku-20240307
-
-# Local Ollama (if running locally)
-# OLLAMA_URL=http://localhost:11434/api/generate
-# OLLAMA_MODEL=llama3.1:8b
-
-# Optional: Webhook configuration (for production)
+# Optional - For production deployment
 # WEBHOOK_URL=https://your-domain.com/webhook
 # PORT=3000
-# NODE_ENV=development
 ```
+
+**🎯 That's it! No complex API keys needed.**
 
 ## 🎯 Usage
 
@@ -157,9 +149,27 @@ GROQ_API_KEY=your_groq_api_key_here
 ### Quiz Types
 
 1. **Article Quiz**: Choose the correct article (der/die/das) for German nouns
-2. **Translation Quiz**: Translate German words to English
+2. **Translation Quiz**: Translate German words to English  
 3. **Mixed Quiz**: Combination of article and translation questions
-4. **Flashcard Quiz**: AI-powered spaced repetition with adaptive difficulty
+4. **🎴 AI Flashcards**: Intelligent spaced repetition system
+
+### 🎴 AI-Powered Flashcard System
+
+**How it works:**
+- **Simple Storage**: Just German word + English translation in database
+- **AI Analysis**: Real-time analysis determines articles, word types, examples
+- **Smart Learning**: Spaced repetition adapts to your progress
+
+**Example Flow:**
+```
+📱 Bot: "What's the German word for 'juice'?"
+🤔 You: Think about it...
+👁️ Click: "Show Answer"  
+🤖 AI: "der Saft" + usage example + word type
+✅ You: "I knew it!" / "I'm learning"
+```
+
+**Perfect for beginners** - no need to pre-define articles or word types!
 
 ### Interactive Features
 
@@ -212,29 +222,37 @@ The bot uses SQLite with better-sqlite3 and the following main tables:
 
 ### Adding New Vocabulary
 
-**Method 1: CSV Import (Recommended)**
+**🎯 Simple CSV Import (Recommended)**
 
-Add vocabulary to CSV files in the `vocabulary/` directory:
-- `vocabulary/levels/a1-words.csv` - A1 level vocabulary
-- `vocabulary/levels/a2-words.csv` - A2 level vocabulary  
-- `vocabulary/levels/b1-words.csv` - B1 level vocabulary
-- `vocabulary/topics/` - Topic-based vocabulary sets
+1. **Create CSV files** in the `vocabulary/levels/` directory:
 
-CSV format:
 ```csv
 german_word,english_translation,level,difficulty_score
 Haus,house,A1,1.0
 Auto,car,A1,1.2
+Wasser,water,A1,1.0
+Brot,bread,A1,1.1
 ```
 
-Then run:
+2. **Import vocabulary**:
 ```bash
 npm run import-simple
 ```
 
-**Method 2: Manual Database Entry**
+**📁 Suggested structure:**
+```
+vocabulary/
+├── levels/
+│   ├── a1-words.csv    # Beginner vocabulary
+│   ├── a2-words.csv    # Elementary vocabulary  
+│   └── b1-words.csv    # Intermediate vocabulary
+└── topics/
+    ├── food.csv        # Food & drinks
+    ├── family.csv      # Family members
+    └── travel.csv      # Travel vocabulary
+```
 
-Add complex vocabulary entries directly to the `vocabulary` table for traditional quizzes.
+**That's it!** The AI will handle articles, word types, and examples automatically.
 
 ## 🤖 AI Integration
 
