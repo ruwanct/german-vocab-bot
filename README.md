@@ -41,9 +41,7 @@ german-vocab-bot/
 │   │   ├── helpers.js           # General helpers
 │   │   └── scheduler.js         # Cron job scheduler
 │   ├── scripts/                  # Data management scripts
-│   │   ├── importVocabulary.js  # Import from JSON files
 │   │   ├── importSimpleVocab.js # Import simplified CSV vocabulary
-│   │   ├── pdfToVocab.js        # Extract vocabulary from PDFs
 │   │   └── manageDuplicates.js  # Duplicate detection and cleanup
 │   └── api/
 │       └── dictionaries.js      # External API integrations
@@ -188,11 +186,8 @@ GROQ_API_KEY=your_groq_api_key_here
 - `npm run migrate-consent` - Run consent system migration
 
 **Vocabulary Management:**
-- `npm run import-vocab` - Import vocabulary from JSON files
 - `npm run import-simple` - Import simplified vocabulary from CSV
-- `npm run pdf-to-csv` - Extract vocabulary from PDF files
 - `npm run check-duplicates` - Find and manage duplicate entries
-- `npm run refresh-db` - Clean database and inject fresh CSV data
 
 **Testing:**
 - `npm test` - Run Jest tests
@@ -237,14 +232,7 @@ Then run:
 npm run import-simple
 ```
 
-**Method 2: PDF Extraction**
-
-Extract vocabulary from PDF files:
-```bash
-npm run pdf-to-csv
-```
-
-**Method 3: Manual Database Entry**
+**Method 2: Manual Database Entry**
 
 Add complex vocabulary entries directly to the `vocabulary` table for traditional quizzes.
 

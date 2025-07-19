@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "🚀 Railway Database Refresh Script"
-echo "=================================="
+echo "🚀 Railway Database Setup Script"
+echo "================================="
 
 # Check if we're in Railway environment
 if [ -z "$RAILWAY_ENVIRONMENT" ]; then
@@ -11,9 +11,14 @@ fi
 
 echo "📍 Environment: $RAILWAY_ENVIRONMENT"
 
-# Run the database refresh
-echo "🔄 Starting database refresh..."
-npm run refresh-db
+# Initialize databases
+echo "🔄 Initializing databases..."
+npm run init-db
+npm run init-flashcard-db
 
-echo "✅ Database refresh completed!"
+# Import vocabulary if available
+echo "📥 Importing vocabulary..."
+npm run import-simple
+
+echo "✅ Database setup completed!"
 echo "🤖 Bot is ready to start..."

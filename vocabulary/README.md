@@ -123,7 +123,7 @@ npm run import-simple import ./vocabulary/topics/food-drinks.csv A1
 ### Scenario 3: PDF Extraction
 ```bash
 # Extract from PDF first
-npm run pdf-to-csv ./my-vocabulary.pdf A1 ./vocabulary/sources/
+npm run import-simple ./my-vocabulary.pdf A1 ./vocabulary/sources/
 
 # Then import the generated CSV
 npm run import-simple import ./vocabulary/sources/my-vocabulary-A1-vocabulary.csv A1

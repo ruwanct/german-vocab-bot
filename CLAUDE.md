@@ -15,11 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` - Development with nodemon auto-restart
 
 **Vocabulary Management:**
-- `npm run import-vocab` - Import vocabulary from JSON files
 - `npm run import-simple` - Import simplified vocabulary from CSV
-- `npm run pdf-to-csv` - Extract vocabulary from PDF files
 - `npm run check-duplicates` - Find and manage duplicate vocabulary entries
-- `npm run refresh-db` - Clean database and inject fresh CSV data
 
 **Testing:**
 - `npm test` - Run Jest tests

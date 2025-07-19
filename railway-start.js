@@ -58,13 +58,8 @@ async function initializeForRailway() {
     console.log(`📚 Vocabulary words in database: ${vocabularyCount}`);
 
     if (vocabularyCount === 0) {
-      console.log('📥 Importing vocabulary...');
-      const CleanAndInject = require('./src/scripts/cleanAndInjectCSV');
-      const importer = new CleanAndInject();
-      await importer.initialize();
-      const results = await importer.importAllCSVFiles();
-      console.log('✅ Vocabulary imported:', results.length, 'levels');
-      await importer.close();
+      console.log('📥 Import vocabulary using: npm run import-simple');
+      console.log('ℹ️  No vocabulary found. Add CSV files to vocabulary/ directory and run import-simple script.');
     }
 
     // 5. Start the bot

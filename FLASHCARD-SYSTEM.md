@@ -134,7 +134,7 @@ CREATE TABLE vocabulary_simple (
 
 #### Step 1: Extract from PDF
 ```bash
-npm run pdf-to-csv ./vocabulary.pdf A1
+npm run import-simple ./vocabulary.pdf A1
 ```
 
 #### Step 2: Import to Flashcard System

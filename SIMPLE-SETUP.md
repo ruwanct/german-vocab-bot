@@ -84,7 +84,7 @@ npm install
 cp .env.example .env
 # Edit .env - only add TELEGRAM_BOT_TOKEN
 npm run init-db
-npm run import-vocab ./data/sample-vocabulary.csv A1 goethe
+npm run import-simple ./data/sample-vocabulary.csv A1 goethe
 npm start
 ```
 
@@ -98,9 +98,9 @@ Quiz starts with vocabulary from your CSV!
 ### **3. Add More Vocabulary**
 ```bash
 # Download A1, A2, B1 lists and import:
-npm run import-vocab ./A1-words.csv A1 goethe  
-npm run import-vocab ./A2-words.csv A2 goethe
-npm run import-vocab ./B1-words.csv B1 goethe
+npm run import-simple ./A1-words.csv A1 goethe  
+npm run import-simple ./A2-words.csv A2 goethe
+npm run import-simple ./B1-words.csv B1 goethe
 ```
 
 ---
