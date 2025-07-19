@@ -8,7 +8,6 @@ const fs = require('fs');
 const QuizHandler = require('./commands/quiz');
 const SettingsHandler = require('./commands/settings');
 const progressHandler = require('./commands/progress');
-const adminHandler = require('./commands/admin');
 const utils = require('./utils/helpers');
 
 class GermanVocabBot {
@@ -21,6 +20,7 @@ class GermanVocabBot {
     
     this.setupMiddleware();
     this.setupCommands();
+    this.setupMenu();
     this.setupCallbacks();
     this.setupErrorHandling();
   }
@@ -182,7 +182,6 @@ I help you learn German vocabulary with focus on articles (der/die/das).
 /words - Browse available vocabulary
 /progress - Show your progress
 /settings - Adjust settings
-/support - Support the project
 /help - Show help
 
 🎯 *Features:*
@@ -208,8 +207,6 @@ Use /words to explore vocabulary, /level to choose your level, then /quiz to get
 /flashcard - Start AI-powered flashcard session
 /progress - View your progress
 /settings - Bot settings
-/support - Support the project
-/admin - Admin panel (authorized users)
 
 *Quiz Types:*
 • **Article Quiz** - Learn German articles (der/die/das)
@@ -243,8 +240,21 @@ Use /support to help keep this bot running!
     this.bot.command('vocabulary', (ctx) => this.showVocabularyPreview(ctx));
     this.bot.command('progress', progressHandler.showProgress.bind(progressHandler));
     this.bot.command('settings', (ctx) => this.settingsHandler.showSettings(ctx, this.db));
-    this.bot.command('admin', adminHandler.handleAdminCommand.bind(adminHandler));
     this.bot.command('support', (ctx) => this.showSupport(ctx));
+  }
+
+  setupMenu() {
+    // Set up Telegram menu commands
+    this.bot.telegram.setMyCommands([
+      { command: 'start', description: 'Start the bot' },
+      { command: 'quiz', description: 'Start a quiz' },
+      { command: 'level', description: 'Choose learning level' },
+      { command: 'words', description: 'Browse vocabulary' },
+      { command: 'progress', description: 'View your progress' },
+      { command: 'settings', description: 'Bot settings' },
+      { command: 'support', description: 'Support the project' },
+      { command: 'help', description: 'Show help' }
+    ]).catch(console.error);
   }
 
   async showLevelSelector(ctx) {
@@ -393,8 +403,6 @@ Every contribution, no matter how small, makes a huge difference!
         await this.handleVocabCallback(ctx);
       } else if (data.startsWith('progress_')) {
         await progressHandler.handleProgressCallback(ctx, this.db);
-      } else if (data.startsWith('admin_')) {
-        await adminHandler.handleAdminCallback(ctx, this.db);
       } else if (data.startsWith('support_')) {
         await this.handleSupportCallback(ctx);
       }
