@@ -12,6 +12,7 @@
     "import-simple": "node src/scripts/importSimpleVocab.js",
     "pdf-to-csv": "node src/scripts/pdfToVocab.js",
     "check-duplicates": "node src/scripts/manageDuplicates.js",
+    "refresh-db": "node src/scripts/cleanAndInjectCSV.js",
     "test": "jest"
   },
   "dependencies": {
