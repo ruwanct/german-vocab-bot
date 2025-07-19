@@ -26,19 +26,24 @@ class GermanVocabBot {
   }
 
   async initialize() {
-    await this.db.connect();
-    
-    if (!fs.existsSync(config.database.path)) {
-      console.log('Database not found. Initializing...');
-      const initializer = new DatabaseInitializer();
-      await initializer.init();
+    try {
+      await this.db.connect();
       
-      console.log('Seeding database with vocabulary...');
-      const seeder = new DatabaseSeeder();
-      await seeder.seed();
+      if (!fs.existsSync(config.database.path)) {
+        console.log('Database not found. Initializing...');
+        const initializer = new DatabaseInitializer();
+        await initializer.init();
+        
+        console.log('Seeding database with vocabulary...');
+        const seeder = new DatabaseSeeder();
+        await seeder.seed();
+      }
+      
+      console.log('Bot initialized successfully');
+    } catch (error) {
+      console.error('Bot initialization failed:', error);
+      throw error;
     }
-    
-    console.log('Bot initialized successfully');
   }
 
   setupMiddleware() {
@@ -513,14 +518,19 @@ Here are some words you'll learn at this level:
   }
 
   async launch() {
-    await this.initialize();
-    
-    if (config.telegram.webhookUrl) {
-      await this.bot.telegram.setWebhook(config.telegram.webhookUrl);
-      console.log('Webhook set successfully');
-    } else {
-      await this.bot.launch();
-      console.log('Bot started in polling mode');
+    try {
+      await this.initialize();
+      
+      if (config.telegram.webhookUrl) {
+        await this.bot.telegram.setWebhook(config.telegram.webhookUrl);
+        console.log('Webhook set successfully');
+      } else {
+        await this.bot.launch();
+        console.log('Bot started in polling mode');
+      }
+    } catch (error) {
+      console.error('Failed to launch bot:', error);
+      process.exit(1);
     }
   }
 

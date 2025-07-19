@@ -4,7 +4,8 @@
   "description": "A Telegram bot for learning German vocabulary with quiz functionality and progress tracking",
   "main": "src/bot.js",
   "scripts": {
-    "start": "node src/bot.js",
+    "start": "node railway-start.js",
+    "start-local": "node src/bot.js",
     "dev": "nodemon src/bot.js",
     "init-db": "node src/database/init.js",
     "init-flashcard-db": "node src/database/flashcard-init.js",
