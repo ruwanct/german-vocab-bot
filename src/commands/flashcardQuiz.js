@@ -226,7 +226,7 @@ _Analysis temporarily unavailable_
     }
 
     // Update progress
-    await this.updateCardProgress(db, userId, vocabularyId, response);
+    await this.updateCardProgress(db, ctx.dbUser.id, vocabularyId, response);
     
     // Update session stats
     if (response === 'known') {
