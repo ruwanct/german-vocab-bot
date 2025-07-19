@@ -182,6 +182,7 @@ I help you learn German vocabulary with focus on articles (der/die/das).
 /words - Browse available vocabulary
 /progress - Show your progress
 /settings - Adjust settings
+/support - Support the project
 /help - Show help
 
 🎯 *Features:*
@@ -207,6 +208,7 @@ Use /words to explore vocabulary, /level to choose your level, then /quiz to get
 /flashcard - Start AI-powered flashcard session
 /progress - View your progress
 /settings - Bot settings
+/support - Support the project
 /admin - Admin panel (authorized users)
 
 *Quiz Types:*
@@ -228,10 +230,8 @@ Use /words to explore vocabulary, /level to choose your level, then /quiz to get
 • Adjust settings to match your learning goals
 • Try flashcards for adaptive learning
 
-*Support the Project:*
-☕ [Buy me a coffee](https://www.buymeacoffee.com/germanvocabbot) to support development!
-
 For issues or questions, contact support via /settings.
+Use /support to help keep this bot running!
       `;
       
       ctx.replyWithMarkdown(helpMessage);
@@ -244,6 +244,7 @@ For issues or questions, contact support via /settings.
     this.bot.command('progress', progressHandler.showProgress.bind(progressHandler));
     this.bot.command('settings', (ctx) => this.settingsHandler.showSettings(ctx, this.db));
     this.bot.command('admin', adminHandler.handleAdminCommand.bind(adminHandler));
+    this.bot.command('support', (ctx) => this.showSupport(ctx));
   }
 
   async showLevelSelector(ctx) {
@@ -345,6 +346,36 @@ Here's what you can learn at each level:
     return stats;
   }
 
+  async showSupport(ctx) {
+    const message = `
+☕ *Support German Vocab Bot*
+
+Thank you for considering supporting this project! 
+
+🎯 *Your support helps with:*
+• Server hosting and maintenance
+• AI API costs for enhanced features
+• Continued development and improvements
+• Adding new vocabulary and features
+
+💝 *Ways to Support:*
+• **Ko-fi**: One-time or monthly support
+• **Share**: Tell friends about the bot
+• **Feedback**: Help improve with suggestions
+
+Every contribution, no matter how small, makes a huge difference!
+
+*Thank you for being part of the German learning community!* 🇩🇪
+    `;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.url('☕ Support on Ko-fi', 'https://ko-fi.com/ruwanc')],
+      [Markup.button.callback('📚 Back to Learning', 'support_back_learning')]
+    ]);
+
+    await ctx.replyWithMarkdown(message, keyboard);
+  }
+
   setupCallbacks() {
     this.bot.on('callback_query', async (ctx) => {
       const data = ctx.callbackQuery.data;
@@ -364,6 +395,8 @@ Here's what you can learn at each level:
         await progressHandler.handleProgressCallback(ctx, this.db);
       } else if (data.startsWith('admin_')) {
         await adminHandler.handleAdminCallback(ctx, this.db);
+      } else if (data.startsWith('support_')) {
+        await this.handleSupportCallback(ctx);
       }
       
       await ctx.answerCbQuery();
@@ -401,6 +434,24 @@ Here's what you can learn at each level:
       await this.showPrivacyPolicy(ctx);
     } else if (data === 'consent_back') {
       await this.showConsentDialog(ctx);
+    }
+  }
+
+  async handleSupportCallback(ctx) {
+    const data = ctx.callbackQuery.data;
+    
+    if (data === 'support_back_learning') {
+      await ctx.editMessageText(
+        `🎯 *Ready to Continue Learning?*\n\nChoose what you'd like to do next:`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('🎴 Start Quiz', 'level_start_quiz')],
+            [Markup.button.callback('📖 Browse Words', 'vocab_start_learning')],
+            [Markup.button.callback('📊 View Progress', 'progress_show')]
+          ]).reply_markup
+        }
+      );
     }
   }
 
