@@ -4,13 +4,14 @@ A comprehensive Telegram bot for learning German vocabulary with interactive qui
 
 ## ✨ Features
 
+- **AI-Powered Flashcard System**: Intelligent spaced repetition with real-time word analysis
 - **Interactive Quiz System**: Article quizzes (der/die/das), translation quizzes, and mixed quizzes
+- **Multiple AI Provider Support**: Groq, OpenAI, Anthropic, and local Ollama integration
 - **Progress Tracking**: Detailed statistics, streaks, and performance analytics
 - **User Settings**: Customizable difficulty, notification preferences, and learning goals
-- **Dictionary API Integration**: Real-time vocabulary from PONS and Linguatools APIs
-- **Smart Caching**: Intelligent vocabulary caching with 2000+ API calls per month
-- **Automatic Vocabulary Enrichment**: Background tasks to expand vocabulary database
-- **Admin Panel**: Monitor API usage, manage vocabulary, and view statistics
+- **Dual Vocabulary System**: Complex vocabulary database + simplified flashcard entries
+- **Smart Database**: SQLite with better-sqlite3 for performance and reliability
+- **Admin Panel**: Monitor usage, manage vocabulary, and view statistics
 - **Data Export**: Export learning progress and statistics
 
 ## 🏗️ Project Structure
@@ -20,25 +21,40 @@ german-vocab-bot/
 ├── src/
 │   ├── bot.js                    # Main bot logic with Telegraf
 │   ├── commands/                 # Command handlers
-│   │   ├── quiz.js              # Quiz functionality
+│   │   ├── quiz.js              # Traditional quiz functionality
+│   │   ├── flashcardQuiz.js     # AI-powered flashcard system
 │   │   ├── progress.js          # Progress tracking
-│   │   └── settings.js          # User settings
+│   │   ├── settings.js          # User settings
+│   │   └── admin.js             # Administrative functions
 │   ├── database/                 # Database layer
 │   │   ├── init.js              # Database initialization
-│   │   ├── models.js            # Database models and queries
+│   │   ├── flashcard-init.js    # Flashcard database setup
+│   │   ├── models-sqlite3.js    # Database models using better-sqlite3
+│   │   ├── models.js            # Legacy database models
 │   │   └── seed.js              # Vocabulary data seeding
+│   ├── services/                 # Business logic services
+│   │   ├── vocabularyManager.js # Vocabulary CRUD operations
+│   │   ├── vocabularyCache.js   # Multi-level caching system
+│   │   ├── aiEnrichment.js      # AI-powered vocabulary analysis
+│   │   └── wordAnalyzer.js      # Word type and article detection
 │   ├── utils/                    # Utility functions
 │   │   ├── helpers.js           # General helpers
 │   │   └── scheduler.js         # Cron job scheduler
-│   ├── services/                 # Business logic services
-│   │   ├── vocabularyCache.js   # Vocabulary caching system
-│   │   └── vocabularyManager.js # Vocabulary management
-│   └── api/                      # External integrations
-│       └── dictionaries.js      # PONS & Linguatools API integration
+│   ├── scripts/                  # Data management scripts
+│   │   ├── importVocabulary.js  # Import from JSON files
+│   │   ├── importSimpleVocab.js # Import simplified CSV vocabulary
+│   │   ├── pdfToVocab.js        # Extract vocabulary from PDFs
+│   │   └── manageDuplicates.js  # Duplicate detection and cleanup
+│   └── api/
+│       └── dictionaries.js      # External API integrations
 ├── config/
 │   └── config.js                # Bot configuration
 ├── data/
-│   └── vocabulary.json          # German B1 vocabulary database
+│   ├── bot.db                   # Main SQLite database
+│   └── german_vocab.db          # Vocabulary database
+├── vocabulary/                   # Vocabulary source files
+│   ├── levels/                  # CSV files by CEFR level (A1, A2, B1)
+│   └── topics/                  # Topic-based vocabulary sets
 ├── .env.example                 # Environment variables template
 ├── package.json
 └── README.md
@@ -51,8 +67,11 @@ german-vocab-bot/
 - Node.js (v16 or higher)
 - npm or yarn
 - Telegram Bot Token (from @BotFather)
-- PONS Dictionary API Key (free 1000 requests/month)
-- Linguatools Dictionary API Key (free 1000 requests/month)
+- AI Provider API Key (choose one or more):
+  - Groq API Key (recommended for speed)
+  - OpenAI API Key
+  - Anthropic API Key
+  - Local Ollama installation
 
 ### Installation
 
@@ -76,10 +95,20 @@ german-vocab-bot/
 4. **Initialize the database**
    ```bash
    npm run init-db
+   npm run init-flashcard-db
    ```
 
-5. **Start the bot**
+5. **Import vocabulary (optional)**
    ```bash
+   npm run import-simple
+   ```
+
+6. **Start the bot**
+   ```bash
+   # Development mode
+   npm run dev
+   
+   # Production mode
    npm start
    ```
 
@@ -89,18 +118,31 @@ Edit your `.env` file with the following variables:
 
 ```env
 # Required
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-PONS_API_KEY=your_pons_api_key_here
-LINGUATOOLS_API_KEY=your_linguatools_api_key_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-# Optional
-WEBHOOK_URL=https://your-domain.com/webhook
-PORT=3000
-DATABASE_PATH=./data/bot.db
-AUTO_ENRICHMENT_ENABLED=true
-AUTO_ENRICHMENT_MAX_WORDS=10
-NODE_ENV=development
-LOG_LEVEL=info
+# Database Configuration
+DATABASE_PATH=./data/german_vocab.db
+
+# AI Provider API Keys (choose one or more)
+# Groq API (recommended for speed)
+GROQ_API_KEY=your_groq_api_key_here
+
+# OpenAI API
+# OPENAI_API_KEY=your_openai_api_key_here
+# OPENAI_MODEL=gpt-3.5-turbo
+
+# Anthropic API
+# ANTHROPIC_API_KEY=your_anthropic_api_key_here
+# ANTHROPIC_MODEL=claude-3-haiku-20240307
+
+# Local Ollama (if running locally)
+# OLLAMA_URL=http://localhost:11434/api/generate
+# OLLAMA_MODEL=llama3.1:8b
+
+# Optional: Webhook configuration (for production)
+# WEBHOOK_URL=https://your-domain.com/webhook
+# PORT=3000
+# NODE_ENV=development
 ```
 
 ## 🎯 Usage
@@ -119,12 +161,15 @@ LOG_LEVEL=info
 1. **Article Quiz**: Choose the correct article (der/die/das) for German nouns
 2. **Translation Quiz**: Translate German words to English
 3. **Mixed Quiz**: Combination of article and translation questions
+4. **Flashcard Quiz**: AI-powered spaced repetition with adaptive difficulty
 
 ### Interactive Features
 
 - **Inline Keyboards**: Easy navigation with clickable buttons
 - **Real-time Feedback**: Immediate results after each question
-- **Progress Tracking**: Automatic saving of quiz results
+- **AI-Powered Analysis**: Intelligent word analysis during flashcards
+- **Progress Tracking**: Automatic saving of quiz results and mastery levels
+- **Spaced Repetition**: Optimized review timing based on memory retention
 - **Streak System**: Daily learning streak tracking
 - **Motivational Messages**: Personalized encouragement based on performance
 
@@ -132,73 +177,110 @@ LOG_LEVEL=info
 
 ### Available Scripts
 
+**Running the Bot:**
 - `npm start` - Start the bot in production mode
+- `npm run start-local` - Start the bot locally
 - `npm run dev` - Start the bot in development mode with nodemon
-- `npm run init-db` - Initialize database and create tables
-- `npm test` - Run tests (when implemented)
+
+**Database Management:**
+- `npm run init-db` - Initialize main database and create tables
+- `npm run init-flashcard-db` - Initialize flashcard database
+- `npm run migrate-consent` - Run consent system migration
+
+**Vocabulary Management:**
+- `npm run import-vocab` - Import vocabulary from JSON files
+- `npm run import-simple` - Import simplified vocabulary from CSV
+- `npm run pdf-to-csv` - Extract vocabulary from PDF files
+- `npm run check-duplicates` - Find and manage duplicate entries
+- `npm run refresh-db` - Clean database and inject fresh CSV data
+
+**Testing:**
+- `npm test` - Run Jest tests
 
 ### Database Schema
 
-The bot uses SQLite with the following main tables:
+The bot uses SQLite with better-sqlite3 and the following main tables:
 
-- `users` - User information and registration data
-- `vocabulary` - German vocabulary with articles and translations (API-enhanced)
-- `user_progress` - Individual word learning progress
-- `quiz_sessions` - Quiz session results and statistics
+**User Management:**
+- `users` - User information, registration data, and consent tracking
 - `user_settings` - User preferences and configuration
-- `vocabulary_cache` - API response caching for performance
+- `user_progress` - Traditional quiz progress tracking
+- `flashcard_progress` - Spaced repetition progress with mastery levels
+
+**Vocabulary Storage:**
+- `vocabulary` - Complex vocabulary with articles, examples, and API data
+- `vocabulary_simple` - Basic German-English word pairs for flashcards
+
+**Session Tracking:**
+- `quiz_sessions` - Traditional quiz session results and statistics
+- `flashcard_sessions` - Flashcard session tracking and analytics
 
 ### Adding New Vocabulary
 
-Edit `data/vocabulary.json` to add new German words:
+**Method 1: CSV Import (Recommended)**
 
-```json
-{
-  "word": "Beispiel",
-  "article": "das",
-  "translation_en": "example",
-  "translation_de": "das Beispiel",
-  "pronunciation": "ˈbaɪʃpiːl",
-  "level": "B1",
-  "category": "general",
-  "example_sentence": "Das ist ein gutes Beispiel."
-}
+Add vocabulary to CSV files in the `vocabulary/` directory:
+- `vocabulary/levels/a1-words.csv` - A1 level vocabulary
+- `vocabulary/levels/a2-words.csv` - A2 level vocabulary  
+- `vocabulary/levels/b1-words.csv` - B1 level vocabulary
+- `vocabulary/topics/` - Topic-based vocabulary sets
+
+CSV format:
+```csv
+german_word,english_translation,level,difficulty_score
+Haus,house,A1,1.0
+Auto,car,A1,1.2
 ```
 
-Then run the seeding script:
+Then run:
 ```bash
-node src/database/seed.js
+npm run import-simple
 ```
 
-**Note**: Manual vocabulary is still supported, but the bot will automatically enrich its database using the dictionary APIs for a much larger vocabulary.
+**Method 2: PDF Extraction**
 
-## 🔄 Dictionary API Integration
+Extract vocabulary from PDF files:
+```bash
+npm run pdf-to-csv
+```
 
-The bot integrates with two professional dictionary APIs:
+**Method 3: Manual Database Entry**
 
-### **PONS Dictionary API**
-- **Free Tier**: 1000 requests/month
-- **Features**: Comprehensive German-English translations, pronunciation, example sentences
-- **Registration**: [PONS Developer Portal](https://api.pons.com/)
+Add complex vocabulary entries directly to the `vocabulary` table for traditional quizzes.
 
-### **Linguatools Dictionary API**
-- **Free Tier**: 1000 requests/month  
-- **Features**: Translation confidence scores, frequency data, multiple options
-- **Registration**: [Linguatools API](https://www.linguatools.de/api/)
+## 🤖 AI Integration
 
-### **Smart Vocabulary System**
-- **Total API Capacity**: 2000 requests/month (1000 + 1000)
-- **Multi-Level Caching**: Memory + Database + API fallback
-- **Automatic Enrichment**: Background tasks populate vocabulary
-- **Quality Scoring**: Selects best translations from multiple sources
+The bot features AI-powered vocabulary analysis for enhanced learning:
+
+### **Supported AI Providers**
+- **Groq** - Fast inference (recommended)
+- **OpenAI** - GPT models for detailed analysis
+- **Anthropic** - Claude models for nuanced understanding
+- **Ollama** - Local AI models for privacy
+
+### **AI-Powered Features**
+- **Real-time Word Analysis**: Determines articles, word types, and usage
+- **Contextual Examples**: Generates relevant example sentences
+- **Flashcard Intelligence**: Adaptive difficulty based on user performance
+- **Smart Categorization**: Automatic tagging and level classification
+
+### **Configuration**
+Configure your preferred AI provider in `.env`:
+```env
+# Choose your provider
+GROQ_API_KEY=your_key_here
+# or OPENAI_API_KEY=your_key_here
+# or ANTHROPIC_API_KEY=your_key_here
+```
 
 ## 📊 Features Overview
 
 ### Quiz System
-- Multiple quiz types with different difficulty levels
-- Randomized question selection
-- Progress tracking and statistics
-- Instant feedback and explanations
+- **Traditional Quizzes**: Article and translation quizzes with immediate feedback
+- **AI Flashcards**: Intelligent spaced repetition with real-time word analysis
+- **Adaptive Difficulty**: Questions adjust based on user performance
+- **Randomized Selection**: Smart algorithms prevent repetition
+- **Progress Tracking**: Detailed statistics and mastery level tracking
 
 ### Progress Tracking
 - Overall statistics and accuracy rates
@@ -228,19 +310,21 @@ The bot integrates with two professional dictionary APIs:
 
 - **Node.js** - Runtime environment
 - **Telegraf** - Telegram Bot API framework
-- **SQLite3** - Database for data persistence
+- **better-sqlite3** - High-performance SQLite database
+- **Multiple AI Providers** - Groq, OpenAI, Anthropic, Ollama support
 - **node-cron** - Scheduled task automation
 - **Axios** - HTTP client for API requests
 - **dotenv** - Environment variable management
+- **CSV Processing** - Vocabulary import and management
 
 ### Performance Optimizations
 
-- **Multi-Level Caching**: Memory cache + Database cache + API fallback
-- **Smart API Usage**: Quota management and automatic failover
-- **Efficient Query Optimization**: Database indexes and optimized queries
-- **Automatic Data Cleanup**: Remove old cache entries and sessions
-- **Response Time Monitoring**: Performance logging and optimization
-- **Background Processing**: Vocabulary enrichment and cache management
+- **better-sqlite3**: Synchronous database operations for improved performance
+- **Multi-Level Caching**: Memory cache + Database cache for vocabulary lookup
+- **Smart Query Optimization**: Database indexes and efficient SQL queries
+- **AI Response Caching**: Cache AI analysis results to reduce API calls
+- **Background Processing**: Automated vocabulary import and data management
+- **Foreign Key Constraints**: Database integrity with referential constraints
 
 ## 🤝 Contributing
 
@@ -262,16 +346,18 @@ If you encounter any issues or have questions:
 2. Review the bot logs for error messages
 3. Ensure all environment variables are properly set
 4. Verify your Telegram Bot Token is valid
-5. Check that your PONS and Linguatools API keys are valid
-6. Use the `/admin` command to check API status and quota
-7. Check database permissions and file paths
+5. Check that your AI provider API key is valid and has sufficient quota
+6. Use the `/admin` command to check system status
+7. Verify database file permissions and paths
+8. Ensure vocabulary CSV files are properly formatted
 
 ## 🎉 Acknowledgments
 
-- **PONS Dictionary** for providing comprehensive German-English translations
-- **Linguatools** for additional vocabulary and translation confidence data
+- **AI Providers** (Groq, OpenAI, Anthropic) for powering intelligent vocabulary analysis
+- **better-sqlite3** for high-performance database operations
 - **Telegram Bot API** for the excellent bot framework
-- **German B1 level learning resources** for vocabulary classification
+- **CEFR Standards** for vocabulary level classification
+- **German language learning community** for vocabulary sources and feedback
 - **Contributors and users** who help improve the bot
 
 ---
