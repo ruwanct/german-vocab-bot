@@ -39,8 +39,11 @@ class Database {
   async createUser(telegramId, userData) {
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO users (telegram_id, username, first_name, last_name, language_code)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO users (
+          telegram_id, username, first_name, last_name, language_code,
+          data_consent_given, privacy_policy_accepted
+        )
+        VALUES (?, ?, ?, ?, ?, 0, 0)
       `);
       
       stmt.run(
@@ -238,6 +241,64 @@ class Database {
         }
       );
       stmt.finalize();
+    });
+  }
+
+  // Consent management methods
+  async updateUserConsent(userId, consentGiven, version = '1.0') {
+    return new Promise((resolve, reject) => {
+      const stmt = this.db.prepare(`
+        UPDATE users SET 
+          data_consent_given = ?,
+          data_consent_date = CURRENT_TIMESTAMP,
+          data_consent_version = ?,
+          privacy_policy_accepted = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      
+      stmt.run(consentGiven ? 1 : 0, version, consentGiven ? 1 : 0, userId, function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.changes);
+        }
+      });
+      stmt.finalize();
+    });
+  }
+
+  async hasUserConsent(userId) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        'SELECT data_consent_given, privacy_policy_accepted FROM users WHERE id = ?',
+        [userId],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row && row.data_consent_given === 1 && row.privacy_policy_accepted === 1);
+          }
+        }
+      );
+    });
+  }
+
+  async getUserConsentInfo(userId) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        `SELECT data_consent_given, data_consent_date, data_consent_version, 
+                privacy_policy_accepted
+         FROM users WHERE id = ?`,
+        [userId],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row);
+          }
+        }
+      );
     });
   }
 

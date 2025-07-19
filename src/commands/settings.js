@@ -11,7 +11,7 @@ class SettingsHandler {
       [Markup.button.callback('🔔 Notifications', 'settings_notifications')],
       [Markup.button.callback('🎯 Learning Goals', 'settings_goals')],
       [Markup.button.callback('🌐 Language', 'settings_language')],
-      [Markup.button.callback('📊 Data Export', 'settings_export')]
+      [Markup.button.callback('📊 Data & Privacy', 'settings_privacy')]
     ]);
 
     const message = `
@@ -26,7 +26,7 @@ Personalize your learning experience:
 🔔 *Notifications*: Reminders and schedules
 🎯 *Learning Goals*: Daily goals and progress targets
 🌐 *Language*: Change interface language
-📊 *Data Export*: Export your progress
+📊 *Data & Privacy*: Export or delete your data
     `;
 
     await ctx.replyWithMarkdown(message, keyboard);
@@ -46,8 +46,14 @@ Personalize your learning experience:
       await this.showGoalSettings(ctx, db);
     } else if (data === 'settings_language') {
       await this.showLanguageSettings(ctx, db);
+    } else if (data === 'settings_privacy') {
+      await this.showPrivacySettings(ctx, db);
     } else if (data === 'settings_export') {
       await this.exportUserData(ctx, db);
+    } else if (data === 'settings_delete_data') {
+      await this.showDataDeletionConfirm(ctx, db);
+    } else if (data === 'settings_delete_confirm') {
+      await this.deleteUserData(ctx, db);
     } else if (data === 'settings_back') {
       await this.showSettings(ctx, db);
     } else if (data.startsWith('settings_set_')) {
@@ -250,6 +256,103 @@ Interface language for the bot.
     });
   }
 
+  async showPrivacySettings(ctx, db) {
+    const consentInfo = await db.getUserConsentInfo(ctx.dbUser.id);
+    const consentDate = consentInfo?.data_consent_date ? 
+      new Date(consentInfo.data_consent_date).toLocaleDateString() : 'Not recorded';
+    
+    const message = `
+📊 *Data & Privacy*
+
+*Your Data Status:*
+• Consent given: ${consentInfo?.data_consent_given ? '✅ Yes' : '❌ No'}
+• Consent date: ${consentDate}
+• Privacy policy: ${consentInfo?.privacy_policy_accepted ? '✅ Accepted' : '❌ Not accepted'}
+
+*Available Actions:*
+• Export your data (GDPR compliant)
+• Delete all your data permanently
+• View privacy policy
+• Withdraw consent (disables bot)
+
+⚠️ *Important:* Deleting your data cannot be undone.
+    `;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('📎 Export Data', 'settings_export')],
+      [Markup.button.callback('🗑️ Delete My Data', 'settings_delete_data')],
+      [Markup.button.callback('📋 Privacy Policy', 'consent_privacy_policy')],
+      [Markup.button.callback('🔙 Back', 'settings_back')]
+    ]);
+
+    await ctx.editMessageText(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard.reply_markup
+    });
+  }
+
+  async showDataDeletionConfirm(ctx, db) {
+    const message = `
+🗑️ *Delete All Data*
+
+⚠️ *WARNING: This action cannot be undone!*
+
+This will permanently delete:
+• All your quiz progress and scores
+• Vocabulary mastery levels and statistics
+• Learning preferences and settings
+• Quiz session history
+• Your user account
+
+After deletion:
+• You will need to give consent again to use the bot
+• All progress will be lost
+• This action complies with GDPR "Right to be forgotten"
+
+Are you absolutely sure?
+    `;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('❌ Cancel', 'settings_privacy')],
+      [Markup.button.callback('🗑️ Yes, Delete Everything', 'settings_delete_confirm')]
+    ]);
+
+    await ctx.editMessageText(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard.reply_markup
+    });
+  }
+
+  async deleteUserData(ctx, db) {
+    try {
+      const userId = ctx.dbUser.id;
+      
+      // Delete all user data from all tables
+      await new Promise((resolve, reject) => {
+        db.db.serialize(() => {
+          db.db.run('DELETE FROM flashcard_progress WHERE user_id = ?', [userId]);
+          db.db.run('DELETE FROM user_progress WHERE user_id = ?', [userId]);
+          db.db.run('DELETE FROM quiz_sessions WHERE user_id = ?', [userId]);
+          db.db.run('DELETE FROM flashcard_sessions WHERE user_id = ?', [userId]);
+          db.db.run('DELETE FROM user_settings WHERE user_id = ?', [userId]);
+          db.db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      });
+
+      await ctx.editMessageText(
+        `✅ *Data Deleted Successfully*\n\nAll your data has been permanently deleted from our system.\n\nTo use the bot again, you'll need to give consent by typing /start.\n\nThank you for using German Vocab Bot!`,
+        { parse_mode: 'Markdown' }
+      );
+
+    } catch (error) {
+      console.error('Data deletion error:', error);
+      await ctx.editMessageText('❌ Error deleting data. Please try again later or contact support.');
+    }
+  }
+
   async exportUserData(ctx, db) {
     const userId = ctx.from.id;
     
@@ -272,8 +375,7 @@ Data will be provided as a JSON file.
       `;
 
       const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('📎 Download Data', 'settings_download_data')],
-        [Markup.button.callback('🔙 Back', 'settings_back')]
+        [Markup.button.callback('🔙 Back', 'settings_privacy')]
       ]);
 
       await ctx.editMessageText(message, {

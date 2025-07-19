@@ -8,6 +8,7 @@
     "dev": "nodemon src/bot.js",
     "init-db": "node src/database/init.js",
     "init-flashcard-db": "node src/database/flashcard-init.js",
+    "migrate-consent": "node src/database/migrate-consent.js",
     "import-vocab": "node src/scripts/importVocabulary.js",
     "import-simple": "node src/scripts/importSimpleVocab.js",
     "pdf-to-csv": "node src/scripts/pdfToVocab.js",
