@@ -42,34 +42,43 @@ Choose an option to view your learning progress:
 
   async showOverallProgress(ctx, db) {
     const userId = ctx.from.id;
-    const userProgress = await db.getUserProgress(ctx.dbUser.id);
+    const flashcardProgress = db.all(`
+      SELECT 
+        fp.*,
+        v.german_word,
+        v.english_translation,
+        v.level
+      FROM flashcard_progress fp
+      JOIN vocabulary_simple v ON fp.vocabulary_id = v.id
+      WHERE fp.user_id = ? AND fp.times_shown > 0
+    `, [ctx.dbUser.id]);
     
-    if (userProgress.length === 0) {
+    if (flashcardProgress.length === 0) {
       await ctx.editMessageText('📊 Overall Progress\n\nYou haven\'t played any quizzes yet. Start with /quiz!');
       return;
     }
 
-    const totalWords = userProgress.length;
-    const masteredWords = userProgress.filter(p => p.correct_answers > p.incorrect_answers).length;
-    const totalQuestions = userProgress.reduce((sum, p) => sum + p.correct_answers + p.incorrect_answers, 0);
-    const totalCorrect = userProgress.reduce((sum, p) => sum + p.correct_answers, 0);
+    const totalWords = flashcardProgress.length;
+    const masteredWords = flashcardProgress.filter(p => p.mastery_level >= 4).length;
+    const totalQuestions = flashcardProgress.reduce((sum, p) => sum + p.times_shown, 0);
+    const totalCorrect = flashcardProgress.reduce((sum, p) => sum + p.times_correct, 0);
     const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
 
-    const categoryStats = this.calculateCategoryStats(userProgress);
-    const levelStats = this.calculateLevelStats(userProgress);
+    const categoryStats = this.calculateCategoryStats(flashcardProgress);
+    const levelStats = this.calculateLevelStats(flashcardProgress);
 
     const message = `📊 Overall Progress
 
 🎯 Overview:
-• Words learned: ${totalWords}
+• Words practiced: ${totalWords}
 • Words mastered: ${masteredWords}
 • Overall accuracy: ${accuracy}%
-• Total questions: ${totalQuestions}
+• Total flashcards shown: ${totalQuestions}
 
-📚 By Categories:
+🎓 By Mastery Level:
 ${categoryStats}
 
-🎓 By Levels:
+📚 By Difficulty Level:
 ${levelStats}
 
 ${this.getProgressMotivation(accuracy)}`;
@@ -219,58 +228,71 @@ ${this.getProgressMotivation(accuracy)}`;
     });
   }
 
-  calculateCategoryStats(userProgress) {
-    const categories = {};
+  calculateCategoryStats(flashcardProgress) {
+    const masteryLevels = {};
     
-    userProgress.forEach(progress => {
-      const category = progress.category || 'unknown';
-      if (!categories[category]) {
-        categories[category] = {
+    flashcardProgress.forEach(progress => {
+      const level = progress.mastery_level;
+      const levelName = this.getMasteryLevelName(level);
+      if (!masteryLevels[levelName]) {
+        masteryLevels[levelName] = {
           total: 0,
           correct: 0,
-          incorrect: 0
+          shown: 0
         };
       }
-      categories[category].total++;
-      categories[category].correct += progress.correct_answers;
-      categories[category].incorrect += progress.incorrect_answers;
+      masteryLevels[levelName].total++;
+      masteryLevels[levelName].correct += progress.times_correct;
+      masteryLevels[levelName].shown += progress.times_shown;
     });
 
     let result = '';
-    Object.entries(categories).forEach(([category, stats]) => {
-      const accuracy = stats.correct + stats.incorrect > 0 ? 
-        Math.round((stats.correct / (stats.correct + stats.incorrect)) * 100) : 0;
-      result += `• ${category}: ${stats.total} words (${accuracy}%)\n`;
+    Object.entries(masteryLevels).forEach(([level, stats]) => {
+      const accuracy = stats.shown > 0 ? 
+        Math.round((stats.correct / stats.shown) * 100) : 0;
+      result += `• ${level}: ${stats.total} words (${accuracy}%)\n`;
     });
 
-    return result || '• Keine Kategorien gefunden\n';
+    return result || '• No progress data found\n';
   }
 
-  calculateLevelStats(userProgress) {
+  calculateLevelStats(flashcardProgress) {
     const levels = {};
     
-    userProgress.forEach(progress => {
-      const level = progress.level || 'unknown';
+    flashcardProgress.forEach(progress => {
+      const level = progress.level || 'A1';
       if (!levels[level]) {
         levels[level] = {
           total: 0,
           correct: 0,
-          incorrect: 0
+          shown: 0
         };
       }
       levels[level].total++;
-      levels[level].correct += progress.correct_answers;
-      levels[level].incorrect += progress.incorrect_answers;
+      levels[level].correct += progress.times_correct;
+      levels[level].shown += progress.times_shown;
     });
 
     let result = '';
     Object.entries(levels).forEach(([level, stats]) => {
-      const accuracy = stats.correct + stats.incorrect > 0 ? 
-        Math.round((stats.correct / (stats.correct + stats.incorrect)) * 100) : 0;
+      const accuracy = stats.shown > 0 ? 
+        Math.round((stats.correct / stats.shown) * 100) : 0;
       result += `• ${level}: ${stats.total} words (${accuracy}%)\n`;
     });
 
     return result || '• No levels found\n';
+  }
+
+  getMasteryLevelName(level) {
+    switch(level) {
+      case 0: return 'New';
+      case 1: return 'Level 1';
+      case 2: return 'Level 2';
+      case 3: return 'Level 3';
+      case 4: return 'Level 4';
+      case 5: return 'Mastered';
+      default: return 'Unknown';
+    }
   }
 
   getProgressMotivation(accuracy) {
