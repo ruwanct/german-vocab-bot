@@ -87,17 +87,12 @@ ${this.getProgressMotivation(accuracy)}`;
   async showRecentActivity(ctx, db) {
     const userId = ctx.from.id;
     
-    const recentSessions = await new Promise((resolve, reject) => {
-      db.db.all(`
-        SELECT * FROM quiz_sessions 
-        WHERE user_id = ? AND completed_at IS NOT NULL 
-        ORDER BY completed_at DESC 
-        LIMIT 10
-      `, [ctx.dbUser.id], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const recentSessions = db.all(`
+      SELECT * FROM quiz_sessions 
+      WHERE user_id = ? AND completed_at IS NOT NULL 
+      ORDER BY completed_at DESC 
+      LIMIT 10
+    `, [ctx.dbUser.id]);
 
     if (recentSessions.length === 0) {
       await ctx.editMessageText('📈 Recent Activity\n\nNo quiz sessions found. Start with /quiz!');
@@ -129,22 +124,17 @@ ${this.getProgressMotivation(accuracy)}`;
   async showBestScores(ctx, db) {
     const userId = ctx.from.id;
     
-    const bestScores = await new Promise((resolve, reject) => {
-      db.db.all(`
-        SELECT 
-          session_type,
-          MAX(correct_answers) as best_correct,
-          MAX(total_questions) as total_questions,
-          MAX(ROUND((correct_answers * 100.0) / total_questions)) as best_accuracy
-        FROM quiz_sessions 
-        WHERE user_id = ? AND completed_at IS NOT NULL 
-        GROUP BY session_type
-        ORDER BY best_accuracy DESC
-      `, [ctx.dbUser.id], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const bestScores = db.all(`
+      SELECT 
+        session_type,
+        MAX(correct_answers) as best_correct,
+        MAX(total_questions) as total_questions,
+        MAX(ROUND((correct_answers * 100.0) / total_questions)) as best_accuracy
+      FROM quiz_sessions 
+      WHERE user_id = ? AND completed_at IS NOT NULL 
+      GROUP BY session_type
+      ORDER BY best_accuracy DESC
+    `, [ctx.dbUser.id]);
 
     if (bestScores.length === 0) {
       await ctx.editMessageText('🏆 Best Scores\n\nNo quiz sessions found. Start with /quiz!');
@@ -174,21 +164,16 @@ ${this.getProgressMotivation(accuracy)}`;
     const userId = ctx.from.id;
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const weeklyData = await new Promise((resolve, reject) => {
-      db.db.all(`
-        SELECT 
-          COUNT(*) as sessions_count,
-          SUM(total_questions) as total_questions,
-          SUM(correct_answers) as correct_answers,
-          session_type
-        FROM quiz_sessions 
-        WHERE user_id = ? AND completed_at > ? 
-        GROUP BY session_type
-      `, [ctx.dbUser.id, weekAgo], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const weeklyData = db.all(`
+      SELECT 
+        COUNT(*) as sessions_count,
+        SUM(total_questions) as total_questions,
+        SUM(correct_answers) as correct_answers,
+        session_type
+      FROM quiz_sessions 
+      WHERE user_id = ? AND completed_at > ? 
+      GROUP BY session_type
+    `, [ctx.dbUser.id, weekAgo]);
 
     if (weeklyData.length === 0) {
       await ctx.editMessageText('📅 Weekly Report\n\nNo activity in the last 7 days. Start with /quiz!');
