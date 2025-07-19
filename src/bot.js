@@ -302,40 +302,33 @@ Here's what you can learn at each level:
   }
 
   async getVocabularyStats() {
-    return new Promise((resolve, reject) => {
-      this.db.db.all(`
-        SELECT level, COUNT(*) as count,
-               GROUP_CONCAT(german_word, ', ') as all_words
-        FROM vocabulary_simple 
-        GROUP BY level
-        ORDER BY level
-      `, async (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    const rows = this.db.all(`
+      SELECT level, COUNT(*) as count,
+             GROUP_CONCAT(german_word, ', ') as all_words
+      FROM vocabulary_simple 
+      GROUP BY level
+      ORDER BY level
+    `);
 
-        const stats = { total: 0 };
-        
-        for (const row of rows) {
-          const words = row.all_words.split(', ');
-          const examples = words.slice(0, 3); // First 3 words as examples
-          
-          stats[row.level] = {
-            count: row.count,
-            examples: examples
-          };
-          stats.total += row.count;
-        }
-        
-        // Ensure all levels exist with defaults
-        if (!stats.A1) stats.A1 = { count: 0, examples: ['No words'] };
-        if (!stats.A2) stats.A2 = { count: 0, examples: ['No words'] };
-        if (!stats.B1) stats.B1 = { count: 0, examples: ['No words'] };
-        
-        resolve(stats);
-      });
-    });
+    const stats = { total: 0 };
+    
+    for (const row of rows) {
+      const words = row.all_words ? row.all_words.split(', ') : [];
+      const examples = words.slice(0, 3); // First 3 words as examples
+      
+      stats[row.level] = {
+        count: row.count,
+        examples: examples.length > 0 ? examples : ['No words']
+      };
+      stats.total += row.count;
+    }
+    
+    // Ensure all levels exist with defaults
+    if (!stats.A1) stats.A1 = { count: 0, examples: ['No words'] };
+    if (!stats.A2) stats.A2 = { count: 0, examples: ['No words'] };
+    if (!stats.B1) stats.B1 = { count: 0, examples: ['No words'] };
+    
+    return stats;
   }
 
   setupCallbacks() {
@@ -475,31 +468,23 @@ Here are some words you'll learn at this level:
   }
 
   async getVocabularySample(level, limit = 10) {
-    return new Promise((resolve, reject) => {
-      this.db.db.all(`
-        SELECT german_word, english_translation
-        FROM vocabulary_simple 
-        WHERE level = ?
-        ORDER BY RANDOM()
-        LIMIT ?
-      `, [level, limit], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    return this.db.all(`
+      SELECT german_word, english_translation
+      FROM vocabulary_simple 
+      WHERE level = ?
+      ORDER BY RANDOM()
+      LIMIT ?
+    `, [level, limit]);
   }
 
   async getLevelCount(level) {
-    return new Promise((resolve, reject) => {
-      this.db.db.get(`
-        SELECT COUNT(*) as count
-        FROM vocabulary_simple 
-        WHERE level = ?
-      `, [level], (err, row) => {
-        if (err) reject(err);
-        else resolve(row.count);
-      });
-    });
+    const row = this.db.get(`
+      SELECT COUNT(*) as count
+      FROM vocabulary_simple 
+      WHERE level = ?
+    `, [level]);
+    
+    return row ? row.count : 0;
   }
 
   setupErrorHandling() {

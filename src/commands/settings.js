@@ -106,22 +106,18 @@ Your flashcards will show words from the selected level.
   }
 
   async getLevelStatistics(db) {
-    return new Promise((resolve, reject) => {
-      db.db.all(`
-        SELECT level, COUNT(*) as count
-        FROM vocabulary_simple
-        GROUP BY level
-      `, (err, rows) => {
-        if (err) reject(err);
-        else {
-          const stats = {};
-          rows.forEach(row => {
-            stats[row.level] = row.count;
-          });
-          resolve(stats);
-        }
-      });
+    const rows = db.all(`
+      SELECT level, COUNT(*) as count
+      FROM vocabulary_simple
+      GROUP BY level
+    `);
+    
+    const stats = {};
+    rows.forEach(row => {
+      stats[row.level] = row.count;
     });
+    
+    return stats;
   }
 
   async showQuizSettings(ctx, db) {
@@ -328,19 +324,12 @@ Are you absolutely sure?
       const userId = ctx.dbUser.id;
       
       // Delete all user data from all tables
-      await new Promise((resolve, reject) => {
-        db.db.serialize(() => {
-          db.db.run('DELETE FROM flashcard_progress WHERE user_id = ?', [userId]);
-          db.db.run('DELETE FROM user_progress WHERE user_id = ?', [userId]);
-          db.db.run('DELETE FROM quiz_sessions WHERE user_id = ?', [userId]);
-          db.db.run('DELETE FROM flashcard_sessions WHERE user_id = ?', [userId]);
-          db.db.run('DELETE FROM user_settings WHERE user_id = ?', [userId]);
-          db.db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-      });
+      db.run('DELETE FROM flashcard_progress WHERE user_id = ?', [userId]);
+      db.run('DELETE FROM user_progress WHERE user_id = ?', [userId]);
+      db.run('DELETE FROM quiz_sessions WHERE user_id = ?', [userId]);
+      db.run('DELETE FROM flashcard_sessions WHERE user_id = ?', [userId]);
+      db.run('DELETE FROM user_settings WHERE user_id = ?', [userId]);
+      db.run('DELETE FROM users WHERE id = ?', [userId]);
 
       await ctx.editMessageText(
         `✅ *Data Deleted Successfully*\n\nAll your data has been permanently deleted from our system.\n\nTo use the bot again, you'll need to give consent by typing /start.\n\nThank you for using German Vocab Bot!`,
@@ -452,16 +441,10 @@ Data will be provided as a JSON file.
   async getUserDataForExport(db, userId) {
     const progress = await db.getUserProgress(userId);
     
-    const sessions = await new Promise((resolve, reject) => {
-      db.db.all(
-        'SELECT * FROM quiz_sessions WHERE user_id = ? ORDER BY created_at DESC',
-        [userId],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
+    const sessions = db.all(
+      'SELECT * FROM quiz_sessions WHERE user_id = ? ORDER BY started_at DESC',
+      [userId]
+    );
 
     const settings = await db.getUserSettings(userId);
     

@@ -40,26 +40,22 @@ class FlashcardQuizHandler {
   }
 
   async getFlashcardVocabulary(db, userId, limit, preferredLevel = 'A1') {
-    return new Promise((resolve, reject) => {
-      // Get vocabulary that needs review, prioritizing difficult words from selected level
-      db.db.all(`
-        SELECT v.id, v.german_word, v.english_translation, v.level,
-               COALESCE(fp.mastery_level, 0) as mastery_level,
-               COALESCE(fp.times_shown, 0) as times_shown,
-               COALESCE(fp.next_review, datetime('now')) as next_review
-        FROM vocabulary_simple v
-        LEFT JOIN flashcard_progress fp ON v.id = fp.vocabulary_id AND fp.user_id = ?
-        WHERE v.level = ? AND (fp.next_review IS NULL OR fp.next_review <= datetime('now'))
-        ORDER BY 
-          fp.mastery_level ASC,
-          fp.times_shown ASC,
-          RANDOM()
-        LIMIT ?
-      `, [userId, preferredLevel, limit], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const result = db.all(`
+      SELECT v.id, v.german_word, v.english_translation, v.level,
+             COALESCE(fp.mastery_level, 0) as mastery_level,
+             COALESCE(fp.times_shown, 0) as times_shown,
+             COALESCE(fp.next_review, datetime('now')) as next_review
+      FROM vocabulary_simple v
+      LEFT JOIN flashcard_progress fp ON v.id = fp.vocabulary_id AND fp.user_id = ?
+      WHERE v.level = ? AND (fp.next_review IS NULL OR fp.next_review <= datetime('now'))
+      ORDER BY 
+        fp.mastery_level ASC,
+        fp.times_shown ASC,
+        RANDOM()
+      LIMIT ?
+    `, [userId, preferredLevel, limit]);
+    
+    return result;
   }
 
   async showCurrentCard(ctx, db) {
@@ -251,32 +247,30 @@ _Analysis temporarily unavailable_
   }
 
   async updateCardProgress(db, userId, vocabularyId, response) {
-    return new Promise((resolve, reject) => {
-      const isCorrect = response === 'known';
-      const masteryChange = isCorrect ? 1 : 0;
-      const nextReview = this.calculateNextReview(isCorrect);
+    const isCorrect = response === 'known';
+    const masteryChange = isCorrect ? 1 : 0;
+    const nextReview = this.calculateNextReview(isCorrect);
 
-      db.db.run(`
-        INSERT INTO flashcard_progress (
-          user_id, vocabulary_id, times_shown, times_correct, times_incorrect,
-          last_shown, mastery_level, next_review
-        ) VALUES (?, ?, 1, ?, ?, datetime('now'), ?, datetime('now', ?))
-        ON CONFLICT(user_id, vocabulary_id) DO UPDATE SET
-          times_shown = times_shown + 1,
-          times_correct = times_correct + ?,
-          times_incorrect = times_incorrect + ?,
-          last_shown = datetime('now'),
-          mastery_level = MAX(0, MIN(5, mastery_level + ?)),
-          next_review = datetime('now', ?)
-      `, [
-        userId, vocabularyId,
-        isCorrect ? 1 : 0, isCorrect ? 0 : 1, masteryChange, nextReview,
-        isCorrect ? 1 : 0, isCorrect ? 0 : 1, masteryChange, nextReview
-      ], (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    // Use UPSERT for better-sqlite3
+    const result = db.run(`
+      INSERT INTO flashcard_progress (
+        user_id, vocabulary_id, times_shown, times_correct, times_incorrect,
+        last_shown, mastery_level, next_review
+      ) VALUES (?, ?, 1, ?, ?, datetime('now'), ?, datetime('now', ?))
+      ON CONFLICT(user_id, vocabulary_id) DO UPDATE SET
+        times_shown = times_shown + 1,
+        times_correct = times_correct + ?,
+        times_incorrect = times_incorrect + ?,
+        last_shown = datetime('now'),
+        mastery_level = MAX(0, MIN(5, mastery_level + ?)),
+        next_review = datetime('now', ?)
+    `, [
+      userId, vocabularyId,
+      isCorrect ? 1 : 0, isCorrect ? 0 : 1, masteryChange, nextReview,
+      isCorrect ? 1 : 0, isCorrect ? 0 : 1, masteryChange, nextReview
+    ]);
+    
+    return result;
   }
 
   calculateNextReview(isCorrect) {
@@ -341,19 +335,16 @@ ${this.getSessionMotivation(accuracy)}
   }
 
   async updateFlashcardSession(db, sessionId, totalCards, cardsKnown) {
-    return new Promise((resolve, reject) => {
-      db.db.run(`
-        UPDATE flashcard_sessions SET
-          cards_reviewed = ?,
-          cards_known = ?,
-          cards_learning = ?,
-          completed_at = datetime('now')
-        WHERE id = ?
-      `, [totalCards, cardsKnown, totalCards - cardsKnown, sessionId], (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    const result = db.run(`
+      UPDATE flashcard_sessions SET
+        cards_reviewed = ?,
+        cards_known = ?,
+        cards_learning = ?,
+        completed_at = datetime('now')
+      WHERE id = ?
+    `, [totalCards, cardsKnown, totalCards - cardsKnown, sessionId]);
+    
+    return result;
   }
 
   async handleFlashcardCallback(ctx, db) {

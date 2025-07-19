@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-const sqlite3 = require('sqlite3').verbose();
+const BetterSQLite = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 const config = require('../../config/config');
 
 /**
@@ -14,69 +15,67 @@ class ConsentMigration {
   }
 
   async migrate() {
-    return new Promise((resolve, reject) => {
-      const db = new sqlite3.Database(this.dbPath, (err) => {
-        if (err) {
-          console.error('Error opening database:', err);
-          reject(err);
-          return;
-        }
-        console.log('Connected to database for consent migration');
-      });
+    try {
+      // Ensure directory exists
+      const dbDir = path.dirname(this.dbPath);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
 
-      db.serialize(() => {
-        // Add consent fields to users table
-        db.run(`
-          ALTER TABLE users ADD COLUMN data_consent_given BOOLEAN DEFAULT 0
-        `, (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding data_consent_given column:', err);
-          } else {
-            console.log('✅ Added data_consent_given column');
-          }
-        });
+      const db = new BetterSQLite(this.dbPath);
+      console.log('Connected to database for consent migration');
 
-        db.run(`
-          ALTER TABLE users ADD COLUMN data_consent_date DATETIME
-        `, (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding data_consent_date column:', err);
-          } else {
-            console.log('✅ Added data_consent_date column');
-          }
-        });
-
-        db.run(`
-          ALTER TABLE users ADD COLUMN data_consent_version TEXT DEFAULT '1.0'
-        `, (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding data_consent_version column:', err);
-          } else {
-            console.log('✅ Added data_consent_version column');
-          }
-        });
-
-        db.run(`
-          ALTER TABLE users ADD COLUMN privacy_policy_accepted BOOLEAN DEFAULT 0
-        `, (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding privacy_policy_accepted column:', err);
-          } else {
-            console.log('✅ Added privacy_policy_accepted column');
-          }
-        });
-      });
-
-      db.close((err) => {
-        if (err) {
-          console.error('Error closing database:', err);
-          reject(err);
+      // Add consent fields to users table (if they don't exist)
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN data_consent_given BOOLEAN DEFAULT 0`);
+        console.log('✅ Added data_consent_given column');
+      } catch (err) {
+        if (err.message.includes('duplicate column name')) {
+          console.log('✅ data_consent_given column already exists');
         } else {
-          console.log('🎉 Consent migration completed successfully');
-          resolve();
+          throw err;
         }
-      });
-    });
+      }
+
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN data_consent_date DATETIME`);
+        console.log('✅ Added data_consent_date column');
+      } catch (err) {
+        if (err.message.includes('duplicate column name')) {
+          console.log('✅ data_consent_date column already exists');
+        } else {
+          throw err;
+        }
+      }
+
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN data_consent_version TEXT DEFAULT '1.0'`);
+        console.log('✅ Added data_consent_version column');
+      } catch (err) {
+        if (err.message.includes('duplicate column name')) {
+          console.log('✅ data_consent_version column already exists');
+        } else {
+          throw err;
+        }
+      }
+
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN privacy_policy_accepted BOOLEAN DEFAULT 0`);
+        console.log('✅ Added privacy_policy_accepted column');
+      } catch (err) {
+        if (err.message.includes('duplicate column name')) {
+          console.log('✅ privacy_policy_accepted column already exists');
+        } else {
+          throw err;
+        }
+      }
+
+      db.close();
+      console.log('🎉 Consent migration completed successfully');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      throw error;
+    }
   }
 }
 
