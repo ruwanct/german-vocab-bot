@@ -244,11 +244,23 @@ Use /support to help keep this bot running!
     this.bot.command('settings', (ctx) => this.settingsHandler.showSettings(ctx, this.db));
     this.bot.command('support', (ctx) => this.showSupport(ctx));
     
-    // Hidden admin debug command with PIN
-    this.bot.hears(/^\/admin_debug_(\w+)\s+(.+)$/, (ctx) => {
-      const pin = ctx.match[1];
-      const word = ctx.match[2].trim();
-      adminHandler.debugWord(ctx, pin, word);
+    // Personal debug commands (restricted to your user ID)
+    this.bot.command('debug', (ctx) => {
+      const args = ctx.message.text.split(' ').slice(1);
+      if (args.length === 0) {
+        return; // Silent fail - no word provided
+      }
+      const word = args.join(' '); // Support multi-word terms like "schon mal"
+      adminHandler.debugWord(ctx, word);
+    });
+    
+    this.bot.command('analytics', (ctx) => {
+      adminHandler.showUserAnalytics(ctx);
+    });
+    
+    // Temporary command to get your user ID - remove after setup
+    this.bot.command('getmyid', (ctx) => {
+      ctx.reply(`Your Telegram User ID: ${ctx.from.id}\nUsername: @${ctx.from.username || 'N/A'}`);
     });
   }
 

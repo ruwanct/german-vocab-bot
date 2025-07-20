@@ -209,10 +209,12 @@ Management options for the German Vocab Bot:
     }
   }
 
-  async debugWord(ctx, pin, word) {
-    // Check PIN first
-    if (pin !== process.env.ADMIN_DEBUG_PIN && pin !== '881001') {
-      // No response at all - command doesn't exist
+  async debugWord(ctx, word) {
+    // Check if user is authorized (your Telegram user ID)
+    const authorizedUserId = process.env.ADMIN_USER_ID || null; // Set this in Railway env vars
+    
+    if (ctx.from.id !== parseInt(authorizedUserId)) {
+      // No response at all - command doesn't exist for others
       return;
     }
 
@@ -249,6 +251,58 @@ Management options for the German Vocab Bot:
       await db.close();
     } catch (error) {
       await ctx.reply(`❌ Debug error: ${error.message}`);
+    }
+  }
+
+  async showUserAnalytics(ctx) {
+    // Check if user is authorized (your Telegram user ID)
+    const authorizedUserId = process.env.ADMIN_USER_ID || null;
+    
+    if (ctx.from.id !== parseInt(authorizedUserId)) {
+      // No response at all - command doesn't exist for others
+      return;
+    }
+
+    try {
+      const Database = require('../database/models');
+      const db = new Database();
+      await db.connect();
+      
+      // Get total registered users
+      const totalUsersResult = db.get('SELECT COUNT(*) as count FROM users');
+      const totalUsers = totalUsersResult.count;
+      
+      // Get level distribution
+      const levelDistribution = db.all(`
+        SELECT 
+          us.preferred_level as level,
+          COUNT(*) as count,
+          ROUND(COUNT(*) * 100.0 / ?, 1) as percentage
+        FROM users u
+        LEFT JOIN user_settings us ON u.id = us.user_id
+        GROUP BY us.preferred_level
+        ORDER BY count DESC
+      `, [totalUsers]);
+      
+      // Format level distribution
+      let levelStats = '';
+      levelDistribution.forEach(level => {
+        const levelName = level.level || 'Not Set';
+        levelStats += `• ${levelName}: ${level.count} users (${level.percentage}%)\n`;
+      });
+      
+      const message = `📊 *User Analytics*
+
+👥 *Total Users:* ${totalUsers} registered
+
+📚 *Level Preferences:*
+${levelStats}
+🕒 *Last updated:* ${new Date().toLocaleString()}`;
+
+      await ctx.reply(message);
+      await db.close();
+    } catch (error) {
+      await ctx.reply(`❌ Analytics error: ${error.message}`);
     }
   }
 }
