@@ -230,13 +230,12 @@ Management options for the German Vocab Bot:
         return;
       }
 
-      const message = `
-🔍 *Debug: "${word}"*
+      const message = `🔍 *Debug: "${word}"*
 
 📊 *Raw Database Entry:*
 • ID: ${result.id}
-• German: \`${result.german_word}\`
-• English: \`${result.english_translation}\`
+• German: ${result.german_word}
+• English: ${result.english_translation}
 • Level: ${result.level}
 • Added: ${result.added_date}
 • Difficulty: ${result.difficulty_score || 'N/A'}
@@ -244,10 +243,9 @@ Management options for the German Vocab Bot:
 🔧 *Debug Info:*
 • Table: vocabulary_simple
 • Status: Found ✅
-• Translation corrected: ${result.english_translation.includes('(') ? '✅' : '⚠️'}
-      `;
+• Translation corrected: ${result.english_translation.includes('(') ? '✅' : '⚠️'}`;
 
-      await ctx.replyWithMarkdown(message);
+      await ctx.reply(message);
       await db.close();
     } catch (error) {
       await ctx.reply(`❌ Debug error: ${error.message}`);
