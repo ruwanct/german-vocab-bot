@@ -245,7 +245,7 @@ Use /support to help keep this bot running!
     this.bot.command('support', (ctx) => this.showSupport(ctx));
     
     // Hidden admin debug command with PIN
-    this.bot.command(/^admin_debug_(\w+)\s+(.+)$/, (ctx) => {
+    this.bot.hears(/^\/admin_debug_(\w+)\s+(.+)$/, (ctx) => {
       const pin = ctx.match[1];
       const word = ctx.match[2].trim();
       adminHandler.debugWord(ctx, pin, word);
