@@ -45,31 +45,37 @@ class WordAnalyzer {
 
   buildAnalysisPrompt(germanWord, englishTranslation, userLevel) {
     return `
-You are a German language expert. Analyze this German word for language learners.
+You are a German teacher helping enrich vocabulary flashcards for A1–B1 learners.
+
+IMPORTANT: The English meaning "${englishTranslation}" is verified and correct from the Goethe Institute glossary. Use this exact meaning context.
 
 German word: "${germanWord}"
-English translation: "${englishTranslation}"
+Verified English meaning: "${englishTranslation}"
 User level: ${userLevel}
+
+Your task: Generate authentic German usage examples for how this word is actually used in real German, respecting the verified English meaning.
 
 Provide ONLY a JSON response with this exact structure:
 {
   "word_type": "noun|verb|adjective|adverb|other",
   "german_display": "the word with article if noun, or just the word",
-  "pronunciation": "IPA pronunciation",
-  "example_sentence": "simple German sentence using the word",
-  "example_translation": "English translation of the example",
-  "grammar_note": "brief grammar tip (max 10 words)",
+  "pronunciation": "IPA pronunciation based on Standard German",
+  "example_sentence": "authentic German sentence showing real usage (A2-level grammar)",
+  "example_translation": "natural English translation of the sentence (idiomatic, not word-for-word)",
+  "grammar_note": "practical usage tip about gender, case, plural form, or grammar (max 15 words)",
   "difficulty": "easy|medium|hard",
-  "level_suggestion": "A1|A2|B1|B2|C1|C2"
+  "level_suggestion": "A1|A2|B1"
 }
 
-Rules:
-- For NOUNS: Include correct article (der/die/das) in german_display
-- For VERBS: Use infinitive form in german_display
-- For ADJECTIVES/ADVERBS: Use base form in german_display
-- Example sentences should be simple and appropriate for ${userLevel} level
-- Grammar notes should be very brief and helpful
-- Be accurate with articles and conjugations
+💡 Critical Rules:
+- The English meaning is pre-verified - respect this context exactly
+- Create examples showing how Germans actually use this word in real life
+- If it's a noun, include the correct article (der/die/das) in german_display
+- If it's a separable verb, show it properly separated in context
+- Use only present tense or simple past in example sentences
+- Example must demonstrate the word in its verified meaning context
+- Grammar notes should be practical tips for learners
+- Focus on authentic German usage patterns, not forced translations
 
 Respond with ONLY the JSON, no other text.
     `;

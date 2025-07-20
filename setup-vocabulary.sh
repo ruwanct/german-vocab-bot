@@ -1,14 +1,17 @@
 #!/bin/bash
 
-echo "🚀 Setting up German Vocabulary Bot with sample vocabulary..."
+echo "🚀 Setting up German Vocabulary Bot with corrected vocabulary..."
 
-# Initialize flashcard database
+# Initialize flashcard database (this will clear and recreate tables)
 echo "📊 Initializing flashcard database..."
 npm run init-flashcard-db
 
-# Import starter vocabulary
-echo "📚 Importing A1 level vocabulary..."
+# Import corrected vocabulary
+echo "📚 Importing A1 level vocabulary (corrected)..."
 npm run import-simple import ./vocabulary/levels/a1-words.csv A1
+
+echo "📖 Importing A2 level vocabulary (corrected)..."
+npm run import-simple import ./vocabulary/levels/a2-words.csv A2
 
 echo "🍽️ Importing food & drinks vocabulary..."
 npm run import-simple import ./vocabulary/topics/food-drinks.csv A1
@@ -28,9 +31,9 @@ echo "🎉 Setup complete!"
 echo ""
 echo "✅ Your bot now has:"
 echo "   - Flashcard database initialized"
-echo "   - 100+ German words imported"
+echo "   - 3000+ corrected German words imported"
 echo "   - Multiple topics covered"
-echo "   - A1/A2 levels ready"
+echo "   - A1/A2 levels ready with improved AI prompt"
 echo ""
 echo "🔄 Next steps:"
 echo "   1. Add your Telegram bot token to .env"
