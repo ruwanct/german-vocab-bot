@@ -8,6 +8,7 @@ const fs = require('fs');
 const QuizHandler = require('./commands/quiz');
 const SettingsHandler = require('./commands/settings');
 const progressHandler = require('./commands/progress');
+const adminHandler = require('./commands/admin');
 const utils = require('./utils/helpers');
 
 class GermanVocabBot {
@@ -242,6 +243,13 @@ Use /support to help keep this bot running!
     this.bot.command('progress', progressHandler.showProgress.bind(progressHandler));
     this.bot.command('settings', (ctx) => this.settingsHandler.showSettings(ctx, this.db));
     this.bot.command('support', (ctx) => this.showSupport(ctx));
+    
+    // Hidden admin debug command with PIN
+    this.bot.command(/^admin_debug_(\w+)\s+(.+)$/, (ctx) => {
+      const pin = ctx.match[1];
+      const word = ctx.match[2].trim();
+      adminHandler.debugWord(ctx, pin, word);
+    });
   }
 
   setupMenu() {

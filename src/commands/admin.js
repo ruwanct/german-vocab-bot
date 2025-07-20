@@ -208,6 +208,51 @@ Management options for the German Vocab Bot:
       await ctx.reply(`❌ Error bei der Suche: ${error.message}`);
     }
   }
+
+  async debugWord(ctx, pin, word) {
+    // Check PIN first
+    if (pin !== process.env.ADMIN_DEBUG_PIN && pin !== '1932') {
+      // No response at all - command doesn't exist
+      return;
+    }
+
+    try {
+      const Database = require('../database/models');
+      const db = new Database();
+      await db.connect();
+      
+      // Query vocabulary_simple table
+      const result = db.get('SELECT * FROM vocabulary_simple WHERE german_word = ?', [word]);
+      
+      if (!result) {
+        await ctx.reply(`❌ Word "${word}" not found in vocabulary_simple table.`);
+        await db.close();
+        return;
+      }
+
+      const message = `
+🔍 *Debug: "${word}"*
+
+📊 *Raw Database Entry:*
+• ID: ${result.id}
+• German: \`${result.german_word}\`
+• English: \`${result.english_translation}\`
+• Level: ${result.level}
+• Added: ${result.added_date}
+• Difficulty: ${result.difficulty_score || 'N/A'}
+
+🔧 *Debug Info:*
+• Table: vocabulary_simple
+• Status: Found ✅
+• Translation corrected: ${result.english_translation.includes('(') ? '✅' : '⚠️'}
+      `;
+
+      await ctx.replyWithMarkdown(message);
+      await db.close();
+    } catch (error) {
+      await ctx.reply(`❌ Debug error: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new AdminHandler();
