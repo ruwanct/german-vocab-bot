@@ -257,11 +257,6 @@ Use /support to help keep this bot running!
     this.bot.command('analytics', (ctx) => {
       adminHandler.showUserAnalytics(ctx);
     });
-    
-    // Temporary command to get your user ID - remove after setup
-    this.bot.command('getmyid', (ctx) => {
-      ctx.reply(`Your Telegram User ID: ${ctx.from.id}\nUsername: @${ctx.from.username || 'N/A'}`);
-    });
   }
 
   setupMenu() {
