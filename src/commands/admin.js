@@ -211,7 +211,7 @@ Management options for the German Vocab Bot:
 
   async debugWord(ctx, pin, word) {
     // Check PIN first
-    if (pin !== process.env.ADMIN_DEBUG_PIN && pin !== '1932') {
+    if (pin !== process.env.ADMIN_DEBUG_PIN && pin !== '881001') {
       // No response at all - command doesn't exist
       return;
     }
